@@ -18,6 +18,7 @@
 
 <h3>Record Purchase</h3>
 <form method="POST" style="margin-bottom:16px;">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
   <div>
     <label>Supplier</label><br>
     <select name="supplier_id" required>

@@ -1,7 +1,9 @@
 # app/__init__.py
 
+import hmac
+import secrets
 from datetime import datetime, time
-from flask import Flask, render_template, session, g, redirect, url_for, flash
+from flask import Flask, abort, render_template, request, session, g, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import func
@@ -18,6 +20,35 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
+
+    def generate_csrf_token():
+        token = session.get("_csrf_token")
+        if not token:
+            token = secrets.token_urlsafe(32)
+            session["_csrf_token"] = token
+        return token
+
+    @app.before_request
+    def csrf_protect():
+        if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+            return
+
+        sent_token = request.form.get("_csrf_token") or request.headers.get("X-CSRF-Token")
+        session_token = session.get("_csrf_token")
+
+        if not sent_token or not session_token or not hmac.compare_digest(sent_token, session_token):
+            abort(400, description="Invalid CSRF token.")
+
+    @app.after_request
+    def set_security_headers(response):
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;",
+        )
+        return response
 
     # ==================================================
     # BLUEPRINTS
@@ -47,6 +78,7 @@ def create_app():
     # ==================================================
     from .utils.permissions import has_feature_access
     app.jinja_env.globals["has_feature_access"] = has_feature_access
+    app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
     # ==================================================
     # LOAD COMPANY CONTEXT (Multi-Tenant Middleware)

@@ -22,6 +22,7 @@
 
       <td>
         <form method="POST" action="{{ url_for('admin.grant_access') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="email" value="{{ u.email }}">
           <input type="hidden" name="feature" value="financial">
           <button type="submit">Grant</button>
@@ -30,6 +31,7 @@
 
       <td>
         <form method="POST" action="{{ url_for('admin.revoke_access') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="email" value="{{ u.email }}">
           <input type="hidden" name="feature" value="financial">
           <button type="submit">Revoke</button>

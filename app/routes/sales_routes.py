@@ -8,6 +8,7 @@ from flask import (
     redirect,
     url_for,
     flash,
+    session,
 )
 
 from .. import db
@@ -22,7 +23,18 @@ sales_bp = Blueprint("sales", __name__, url_prefix="/sales")
 def sales_home():
     """Record a new sale and show recent sales + today's summary."""
 
-    products = Product.query.order_by(Product.name).all()
+    user = session.get("user") or {}
+    company_id = user.get("company_id")
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
+    products = (
+        Product.query
+        .filter_by(company_id=company_id)
+        .order_by(Product.name)
+        .all()
+    )
 
     # ---------- HANDLE NEW SALE (POST) ----------
     if request.method == "POST":
@@ -41,7 +53,10 @@ def sales_home():
             flash("Please select a product and enter a quantity.", "error")
             return redirect(url_for("sales.sales_home"))
 
-        product = Product.query.get_or_404(product_id)
+        product = Product.query.filter_by(
+            id=product_id,
+            company_id=company_id,
+        ).first_or_404()
 
         # Check stock
         current_stock = int(product.quantity or 0)
@@ -64,6 +79,7 @@ def sales_home():
 
         # Create Sale
         sale = Sale(
+            company_id=company_id,
             product=product,
             quantity=quantity,
             unit_price=unit_price,
@@ -84,7 +100,13 @@ def sales_home():
     # ---------- SHOW PAGE (GET) ----------
 
     # Recent sales table
-    recent_sales = Sale.query.order_by(Sale.created_at.desc()).limit(20).all()
+    recent_sales = (
+        Sale.query
+        .filter_by(company_id=company_id)
+        .order_by(Sale.created_at.desc())
+        .limit(20)
+        .all()
+    )
 
     # Today's summary
     today = date.today()
@@ -92,15 +114,19 @@ def sales_home():
     end_of_day = datetime.combine(today, time.max)
 
     totals = (
-    db.session.query(
-        db.func.count(Sale.id),
-        db.func.coalesce(db.func.sum(Sale.quantity), 0),
-        db.func.coalesce(db.func.sum(Sale.line_total), 0.0),
-        db.func.coalesce(db.func.sum(Sale.line_profit), 0.0),
+        db.session.query(
+            db.func.count(Sale.id),
+            db.func.coalesce(db.func.sum(Sale.quantity), 0),
+            db.func.coalesce(db.func.sum(Sale.line_total), 0.0),
+            db.func.coalesce(db.func.sum(Sale.line_profit), 0.0),
+        )
+        .filter(
+            Sale.company_id == company_id,
+            Sale.created_at >= start_of_day,
+            Sale.created_at <= end_of_day,
+        )
+        .one()
     )
-    .filter(Sale.created_at >= start_of_day, Sale.created_at <= end_of_day)
-    .one()
-)
 
     today_sales_count, today_items_sold, today_total_amount, today_total_profit = totals
 
@@ -120,7 +146,13 @@ def sales_home():
 @sales_bp.route("/delete/<int:sale_id>", methods=["POST"])
 @login_required
 def delete_sale(sale_id):
-    sale = Sale.query.get_or_404(sale_id)
+    user = session.get("user") or {}
+    company_id = user.get("company_id")
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
+    sale = Sale.query.filter_by(id=sale_id, company_id=company_id).first_or_404()
 
     # Return stock
     if sale.product and sale.quantity:

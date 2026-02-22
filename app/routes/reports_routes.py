@@ -1,7 +1,7 @@
 # app/routes/reports_routes.py
 from datetime import datetime, date, time
 
-from flask import Blueprint, render_template, request, send_file
+from flask import Blueprint, flash, render_template, request, send_file, redirect, session, url_for
 from sqlalchemy import func
 import io
 
@@ -153,6 +153,12 @@ def _build_reports_pdf(
 @reports_bp.route("/", methods=["GET"])
 @login_required
 def reports_home():
+    user = session.get("user") or {}
+    company_id = user.get("company_id")
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
     # Default: today
     today = date.today()
     start_date_str = (request.args.get("start_date") or today.strftime("%Y-%m-%d")).strip()
@@ -171,7 +177,11 @@ def reports_home():
 
     # Pull sales
     sales = (
-        Sale.query.filter(Sale.created_at >= start_dt, Sale.created_at <= end_dt)
+        Sale.query.filter(
+            Sale.company_id == company_id,
+            Sale.created_at >= start_dt,
+            Sale.created_at <= end_dt,
+        )
         .order_by(Sale.created_at.desc())
         .all()
     )
@@ -194,7 +204,11 @@ def reports_home():
             func.coalesce(func.sum(Sale.line_total), 0.0).label("amount"),
             func.coalesce(func.sum(Sale.quantity), 0).label("items"),
         )
-        .filter(Sale.created_at >= start_dt, Sale.created_at <= end_dt)
+        .filter(
+            Sale.company_id == company_id,
+            Sale.created_at >= start_dt,
+            Sale.created_at <= end_dt,
+        )
         .group_by(func.date(Sale.created_at))
         .order_by(func.date(Sale.created_at).asc())
         .all()
@@ -213,7 +227,11 @@ def reports_home():
             func.coalesce(func.sum(Sale.line_total), 0.0).label("amount"),
             func.coalesce(func.sum(Sale.quantity), 0).label("items"),
         )
-        .filter(Sale.created_at >= start_dt, Sale.created_at <= end_dt)
+        .filter(
+            Sale.company_id == company_id,
+            Sale.created_at >= start_dt,
+            Sale.created_at <= end_dt,
+        )
         .group_by(func.coalesce(Product.category, "Uncategorized"))
         .order_by(func.sum(Sale.line_total).desc())
         .all()
@@ -240,6 +258,12 @@ def reports_home():
 @reports_bp.route("/download_pdf", methods=["GET"])
 @login_required
 def download_pdf():
+    user = session.get("user") or {}
+    company_id = user.get("company_id")
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
     today = date.today()
     start_date_str = (request.args.get("start_date") or today.strftime("%Y-%m-%d")).strip()
     end_date_str = (request.args.get("end_date") or today.strftime("%Y-%m-%d")).strip()
@@ -253,7 +277,11 @@ def download_pdf():
     end_dt = datetime.combine(end_date, time.max)
 
     sales = (
-        Sale.query.filter(Sale.created_at >= start_dt, Sale.created_at <= end_dt)
+        Sale.query.filter(
+            Sale.company_id == company_id,
+            Sale.created_at >= start_dt,
+            Sale.created_at <= end_dt,
+        )
         .order_by(Sale.created_at.desc())
         .all()
     )
@@ -274,7 +302,11 @@ def download_pdf():
             func.coalesce(func.sum(Sale.line_total), 0.0).label("amount"),
             func.coalesce(func.sum(Sale.quantity), 0).label("items"),
         )
-        .filter(Sale.created_at >= start_dt, Sale.created_at <= end_dt)
+        .filter(
+            Sale.company_id == company_id,
+            Sale.created_at >= start_dt,
+            Sale.created_at <= end_dt,
+        )
         .group_by(func.date(Sale.created_at))
         .order_by(func.date(Sale.created_at).asc())
         .all()
@@ -291,7 +323,11 @@ def download_pdf():
             func.coalesce(func.sum(Sale.line_total), 0.0).label("amount"),
             func.coalesce(func.sum(Sale.quantity), 0).label("items"),
         )
-        .filter(Sale.created_at >= start_dt, Sale.created_at <= end_dt)
+        .filter(
+            Sale.company_id == company_id,
+            Sale.created_at >= start_dt,
+            Sale.created_at <= end_dt,
+        )
         .group_by(func.coalesce(Product.category, "Uncategorized"))
         .order_by(func.sum(Sale.line_total).desc())
         .all()

@@ -5,6 +5,7 @@ import io
 
 from flask import (
     Blueprint,
+    current_app,
     render_template,
     request,
     redirect,
@@ -34,13 +35,25 @@ financial_bp = Blueprint("financial", __name__, url_prefix="/financial")
 # =====================================================
 # Permission Helper (Company Scoped)
 # =====================================================
+def _is_platform_admin(email: str) -> bool:
+    configured = current_app.config.get("PLATFORM_ADMIN_EMAILS") or set()
+    return str(email or "").strip().lower() in configured
+
+
+def _safe_parse_date(raw_value: str, fallback: date) -> date:
+    try:
+        return datetime.strptime((raw_value or "").strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return fallback
+
+
 def has_financial_access():
     user = session.get("user")
     if not user:
         return False
 
     # Platform owner bypass
-    if user.get("email") == "addaiprincessnhyira@gmail.com":
+    if _is_platform_admin(user.get("email")):
         return True
 
     access = FeatureAccess.query.filter_by(
@@ -73,13 +86,13 @@ def financial_home():
     start_date_str = request.args.get("start_date") or date.today().strftime("%Y-%m-%d")
     end_date_str = request.args.get("end_date") or date.today().strftime("%Y-%m-%d")
 
-    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    start_date = _safe_parse_date(start_date_str, date.today())
+    end_date = _safe_parse_date(end_date_str, date.today())
+    if end_date < start_date:
+        end_date = start_date
 
     start_dt = datetime.combine(start_date, time.min)
     end_dt = datetime.combine(end_date, time.max)
-
-    print("SESSION:", session.get("user"))
 
     # ---- Sales (Company Scoped) ----
     sales = (
@@ -138,8 +151,10 @@ def financial_statement_pdf():
     start_date_str = request.args.get("start_date") or date.today().strftime("%Y-%m-%d")
     end_date_str = request.args.get("end_date") or date.today().strftime("%Y-%m-%d")
 
-    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    start_date = _safe_parse_date(start_date_str, date.today())
+    end_date = _safe_parse_date(end_date_str, date.today())
+    if end_date < start_date:
+        end_date = start_date
 
     start_dt = datetime.combine(start_date, time.min)
     end_dt = datetime.combine(end_date, time.max)
@@ -297,11 +312,18 @@ def purchases():
     )
 
     if request.method == "POST":
-
-        supplier_id = int(request.form.get("supplier_id") or 0)
-        product_id = int(request.form.get("product_id") or 0)
-        quantity = int(request.form.get("quantity") or 0)
-        unit_cost = float(request.form.get("unit_cost") or 0.0)
+        try:
+            supplier_id = int(request.form.get("supplier_id") or 0)
+            product_id = int(request.form.get("product_id") or 0)
+            quantity = int(request.form.get("quantity") or 0)
+            unit_cost = float(
+                request.form.get("unit_cost")
+                or request.form.get("buying_price")
+                or 0.0
+            )
+        except ValueError:
+            flash("Please provide valid numeric values for quantity and unit cost.", "error")
+            return redirect(url_for("financial.purchases"))
 
         if not supplier_id or not product_id or quantity <= 0:
             flash("Please select supplier, product and enter valid quantity.", "error")

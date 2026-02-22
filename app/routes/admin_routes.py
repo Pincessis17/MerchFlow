@@ -1,11 +1,12 @@
 # app/routes/admin_routes.py
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+from flask import Blueprint, current_app, render_template, redirect, url_for, flash, request, session
 from .. import db
 from ..models import User, FeatureAccess
 from ..utils.auth import login_required
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+ALLOWED_FEATURES = {"financial"}
 
 
 # ------------------------------------------------
@@ -13,11 +14,9 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 # ------------------------------------------------
 def super_admin_required():
     user = session.get("user") or {}
-    email = user.get("email")
-
-    SUPER_ADMIN_EMAIL = "addaiprincessnhyira@gmail.com"
-
-    return email == SUPER_ADMIN_EMAIL
+    email = str(user.get("email") or "").strip().lower()
+    admin_emails = current_app.config.get("PLATFORM_ADMIN_EMAILS") or set()
+    return email in admin_emails
 
 
 # ------------------------------------------------
@@ -69,8 +68,16 @@ def grant_access():
     user = session.get("user")
     company_id = user["company_id"]
 
-    email = request.form.get("email")
-    feature = request.form.get("feature")
+    email = (request.form.get("email") or "").strip().lower()
+    feature = (request.form.get("feature") or "").strip().lower()
+    if not email or feature not in ALLOWED_FEATURES:
+        flash("Invalid access request.", "error")
+        return redirect(url_for("admin.admin_home"))
+
+    target_user = User.query.filter_by(company_id=company_id, email=email).first()
+    if not target_user:
+        flash("User was not found in your company.", "error")
+        return redirect(url_for("admin.admin_home"))
 
     existing = FeatureAccess.query.filter_by(
         company_id=company_id,
@@ -109,8 +116,11 @@ def revoke_access():
     user = session.get("user")
     company_id = user["company_id"]
 
-    email = request.form.get("email")
-    feature = request.form.get("feature")
+    email = (request.form.get("email") or "").strip().lower()
+    feature = (request.form.get("feature") or "").strip().lower()
+    if not email or feature not in ALLOWED_FEATURES:
+        flash("Invalid access request.", "error")
+        return redirect(url_for("admin.admin_home"))
 
     access = FeatureAccess.query.filter_by(
         company_id=company_id,
