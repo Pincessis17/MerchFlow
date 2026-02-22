@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ title or "MerchFlow" }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  </head>
+
+  <body>
+    <div class="wrap">
+
+      <!-- ===================== NAVBAR ===================== -->
+      <div class="glass navbar">
+
+        <!-- Brand -->
+        <div class="brand">
+          <div class="logo">MF</div>
+          <div>
+            <strong>MerchFlow</strong>
+            {% if session.get('user') %}
+              <div class="company-name">
+                {{ session.get('user').get('company_name', '') }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navlinks">
+
+          <a href="{{ url_for('home') }}"
+             class="{% if request.endpoint == 'home' %}active{% endif %}">
+             Dashboard
+          </a>
+
+          <a href="{{ url_for('sales.sales_home') }}"
+             class="{% if request.blueprint == 'sales' %}active{% endif %}">
+             Sales
+          </a>
+
+          <a href="{{ url_for('inventory.inventory_home') }}"
+             class="{% if request.blueprint == 'inventory' %}active{% endif %}">
+             Inventory
+          </a>
+
+          <a href="{{ url_for('reports.reports_home') }}"
+             class="{% if request.blueprint == 'reports' %}active{% endif %}">
+             Reports
+          </a>
+
+          <!-- Financial (Feature Controlled) -->
+          {% set can_access_financial = has_feature_access('financial') %}
+
+          <a href="{{ url_for('financial.financial_home') }}"
+             class="{% if request.blueprint == 'financial' %}active{% endif %}
+                    {% if not can_access_financial %}locked{% endif %}">
+             Financial
+             {% if not can_access_financial %}
+                🔒
+             {% endif %}
+          </a>
+
+          <!-- Admin (Only Platform Owner) -->
+          {% if session.get('user', {}).get('is_platform_admin') %}
+            <a href="{{ url_for('admin.admin_home') }}"
+               class="{% if request.blueprint == 'admin' %}active{% endif %}">
+               Admin
+            </a>
+          {% endif %}
+
+        </div>
+
+        <!-- User Info -->
+        {% set user = session.get('user') %}
+        <div class="userbox">
+          {% if user %}
+            <span class="pill">
+              {{ user.get('name','User') }}
+            </span>
+            <a class="pill" href="{{ url_for('auth.logout') }}">
+              Logout
+            </a>
+          {% else %}
+            <a class="pill" href="{{ url_for('auth.login') }}">
+              Login
+            </a>
+          {% endif %}
+        </div>
+
+      </div>
+      <!-- ===================== END NAVBAR ===================== -->
+
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- Page Content -->
+      {% block content %}{% endblock %}
+
+    </div>
+  </body>
+</html>

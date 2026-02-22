@@ -1,0 +1,106 @@
+{% extends "layout.html" %}
+
+{% block title %}Financial - Pharmacy App{% endblock %}
+
+{% block content %}
+<h2>Financial</h2>
+
+<p>
+  <a href="{{ url_for('financial.suppliers') }}">Suppliers</a> |
+  <a href="{{ url_for('financial.purchases') }}">Purchases</a>
+</p>
+
+<hr>
+
+<h3>Statement Filter</h3>
+
+<form method="get" style="margin-bottom:16px;">
+  <div style="margin-bottom:8px;">
+    <label>Start date</label><br>
+    <input type="date" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
+  </div>
+
+  <div style="margin-bottom:8px;">
+    <label>End date</label><br>
+    <input type="date" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">
+  </div>
+
+  <button type="submit" style="width:240px; padding:8px;">Apply</button>
+</form>
+
+<p>
+  <a href="{{ url_for('financial.financial_statement_pdf',
+      start_date=start_date.strftime('%Y-%m-%d'),
+      end_date=end_date.strftime('%Y-%m-%d')) }}">
+    Download Statement (PDF)
+  </a>
+</p>
+
+<hr>
+
+<h3>Summary ({{ start_date.strftime('%Y-%m-%d') }} → {{ end_date.strftime('%Y-%m-%d') }})</h3>
+
+<ul>
+  <li><strong>Total revenue:</strong> GHS {{ "%.2f"|format(total_revenue) }}</li>
+  <li><strong>Total COGS:</strong> GHS {{ "%.2f"|format(total_cogs) }}</li>
+  <li><strong>Total profit:</strong> GHS {{ "%.2f"|format(total_profit) }}</li>
+  <li><strong>Total purchases:</strong> GHS {{ "%.2f"|format(total_purchases) }}</li>
+</ul>
+
+<hr>
+
+<h3>Recent Sales (Preview)</h3>
+{% if sales %}
+<table border="1" cellpadding="5">
+  <tr>
+    <th>#</th>
+    <th>Date</th>
+    <th>Product</th>
+    <th>Qty</th>
+    <th>Total</th>
+    <th>Profit</th>
+  </tr>
+  {% for s in sales %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ s.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+    <td>{{ s.product.name if s.product else "" }}</td>
+    <td>{{ s.quantity }}</td>
+    <td>{{ "%.2f"|format(s.line_total or 0) }}</td>
+    <td>{{ "%.2f"|format(s.line_profit or 0) }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No sales in this period.</p>
+{% endif %}
+
+<hr>
+
+<h3>Recent Purchases (Preview)</h3>
+{% if purchases %}
+<table border="1" cellpadding="5">
+  <tr>
+    <th>#</th>
+    <th>Date</th>
+    <th>Supplier</th>
+    <th>Product</th>
+    <th>Qty</th>
+    <th>Total</th>
+  </tr>
+  {% for p in purchases %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ p.purchased_on or "" }}</td>
+    <td>{{ p.supplier.name if p.supplier else "" }}</td>
+    <td>{{ p.product.name if p.product else "" }}</td>
+    <td>{{ p.quantity }}</td>
+    <td>{{ "%.2f"|format(p.line_total or 0) }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No purchases in this period.</p>
+{% endif %}
+
+{% endblock %}

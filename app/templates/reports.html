@@ -1,0 +1,109 @@
+{% extends "layout.html" %}
+
+{% block title %}Sales Reports - Pharmacy App{% endblock %}
+
+{% block content %}
+<h2>Sales Reports</h2>
+
+<h3>Filter by Date</h3>
+<form method="get" style="margin-bottom:16px;">
+  <div style="margin-bottom:8px;">
+    <label for="start_date">Start date:</label><br>
+    <input
+      type="date"
+      id="start_date"
+      name="start_date"
+      value="{{ start_date.strftime('%Y-%m-%d') }}"
+    >
+  </div>
+
+  <div style="margin-bottom:8px;">
+    <label for="end_date">End date:</label><br>
+    <input
+      type="date"
+      id="end_date"
+      name="end_date"
+      value="{{ end_date.strftime('%Y-%m-%d') }}"
+    >
+  </div>
+
+  <button type="submit" style="width:240px; padding:8px;">Apply</button>
+</form>
+
+<p>
+  <a href="{{ url_for(
+        'reports.download_pdf',
+        start_date=start_date.strftime('%Y-%m-%d'),
+        end_date=end_date.strftime('%Y-%m-%d')
+      ) }}">
+    Download PDF
+  </a>
+</p>
+
+<hr>
+
+<h3>
+  Summary ({{ start_date.strftime('%Y-%m-%d') }} → {{ end_date.strftime('%Y-%m-%d') }})
+</h3>
+<ul>
+  <li>Total number of sales: {{ total_sales_count }}</li>
+  <li>Total items sold: {{ total_items_sold }}</li>
+  <li>Total amount: {{ "%.2f"|format(total_amount or 0) }}</li>
+</ul>
+
+<h3>Top Products (by quantity)</h3>
+{% if top_products %}
+  <ol>
+    {% for name, qty in top_products %}
+      <li>{{ name }} — {{ qty }} sold</li>
+    {% endfor %}
+  </ol>
+{% else %}
+  <p>No sales in this period.</p>
+{% endif %}
+
+<hr>
+
+<h3>Sales by Day</h3>
+{% if sales_by_day %}
+  <table border="1" cellpadding="5">
+    <tr>
+      <th>Date</th>
+      <th>Total amount</th>
+      <th>Items sold</th>
+    </tr>
+    {% for day, stats in sales_by_day %}
+    <tr>
+      <td>{{ day.strftime('%Y-%m-%d') }}</td>
+      <td>{{ "%.2f"|format(stats["amount"]) }}</td>
+      <td>{{ stats["items"] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>No sales in this period.</p>
+{% endif %}
+
+<hr>
+
+<h3>Sales by Category</h3>
+{% if sales_by_category %}
+  <table border="1" cellpadding="5">
+    <tr>
+      <th>Category</th>
+      <th>Total amount</th>
+      <th>Items sold</th>
+    </tr>
+    {% for cat, stats in sales_by_category %}
+    <tr>
+      <td>{{ cat }}</td>
+      <td>{{ "%.2f"|format(stats["amount"]) }}</td>
+      <td>{{ stats["items"] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>No sales in this period.</p>
+{% endif %}
+
+{% endblock %}

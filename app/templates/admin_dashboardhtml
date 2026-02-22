@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Access Control Panel</h2>
+
+<table>
+  <tr>
+    <th>Email</th>
+    <th>Name</th>
+    <th>Financial Access</th>
+    <th>Action</th>
+  </tr>
+
+  {% for user in users %}
+  {% set access = financial_access.get(user.email) %}
+  <tr>
+    <td>{{ user.email }}</td>
+    <td>{{ user.name }}</td>
+
+    <td>
+      {% if access and access.is_enabled %}
+        <span style="color:lightgreen;">Enabled</span>
+      {% else %}
+        <span style="color:#ff6b6b;">Disabled</span>
+      {% endif %}
+    </td>
+
+    <td>
+      <a href="{{ url_for('admin.toggle_financial_access', user_id=user.id) }}">
+        Toggle
+      </a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% endblock %}

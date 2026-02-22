@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit Product - Pharmacy App{% endblock %}
+
+{% block content %}
+<h2>Edit Product</h2>
+
+<form method="POST">
+  <div>
+    <label for="name">Product Name</label><br>
+    <input type="text" id="name" name="name" value="{{ product.name }}" required>
+  </div>
+  <br>
+
+  <div>
+    <label for="quantity">Quantity</label><br>
+    <input type="number" id="quantity" name="quantity" min="0" value="{{ product.quantity }}">
+  </div>
+  <br>
+
+  <div>
+    <label for="unit">Unit</label><br>
+    <input type="text" id="unit" name="unit" value="{{ product.unit or '' }}">
+  </div>
+  <br>
+
+  <div>
+    <label for="category">Category</label><br>
+    <input type="text" id="category" name="category" value="{{ product.category or '' }}">
+  </div>
+  <br>
+
+  <div>
+    <label for="expiry_date">Expiry Date</label><br>
+    <input
+      type="date"
+      id="expiry_date"
+      name="expiry_date"
+      value="{% if product.expiry_date %}{{ product.expiry_date.strftime('%Y-%m-%d') }}{% endif %}">
+  </div>
+  <br>
+
+  <div>
+    <label for="price">Price</label><br>
+    <input type="number" step="0.01" id="price" name="price" min="0" value="{{ product.price }}">
+  </div>
+  <br>
+
+  <button type="submit">Save Changes</button>
+  <a href="{{ url_for('inventory.inventory_home') }}">Cancel</a>
+</form>
+{% endblock %}
