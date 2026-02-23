@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Invoice {{ invoice.invoice_number }}</h2>
+  <p>
+    <a href="{{ url_for('invoices.list_invoices') }}">← Back</a> |
+    <a href="{{ url_for('invoices.download_invoice_pdf', invoice_id=invoice.id) }}">Download PDF</a> |
+    <a href="{{ url_for('invoices.print_invoice', invoice_id=invoice.id) }}" target="_blank">Print</a>
+  </p>
+
+  <div class="grid2">
+    <div>
+      <h3>Invoice Info</h3>
+      <p><strong>Status:</strong> {{ invoice.status }}</p>
+      <p><strong>Customer:</strong> {{ invoice.customer_name }}</p>
+      <p><strong>Email:</strong> {{ invoice.customer_email or "-" }}</p>
+      <p><strong>Issue Date:</strong> {{ invoice.issue_date.strftime('%Y-%m-%d') }}</p>
+      <p><strong>Due Date:</strong> {{ invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else '-' }}</p>
+      <p><strong>Address:</strong> {{ invoice.billing_address or "-" }}</p>
+      <p><strong>Notes:</strong> {{ invoice.notes or "-" }}</p>
+    </div>
+    <div>
+      <h3>Totals</h3>
+      <p><strong>Subtotal:</strong> {{ "%.2f"|format(invoice.subtotal or 0) }} {{ invoice.currency }}</p>
+      <p><strong>Tax:</strong> {{ "%.2f"|format(invoice.tax_amount or 0) }}</p>
+      <p><strong>Discount:</strong> {{ "%.2f"|format(invoice.discount_amount or 0) }}</p>
+      <p><strong>Total:</strong> {{ "%.2f"|format(invoice.total_amount or 0) }} {{ invoice.currency }}</p>
+      {% if invoice.status != 'paid' %}
+        <form method="post" action="{{ url_for('invoices.mark_invoice_paid', invoice_id=invoice.id) }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button type="submit">Mark as Paid</button>
+        </form>
+      {% else %}
+        <p><strong>Paid At:</strong> {{ invoice.paid_at.strftime('%Y-%m-%d %H:%M') if invoice.paid_at else '-' }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <h3>Line Items</h3>
+  <table>
+    <tr>
+      <th>#</th>
+      <th>Description</th>
+      <th>Qty</th>
+      <th>Unit Price</th>
+      <th>Total</th>
+    </tr>
+    {% for item in invoice.line_items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item.description }}</td>
+        <td>{{ "%.2f"|format(item.quantity or 0) }}</td>
+        <td>{{ "%.2f"|format(item.unit_price or 0) }}</td>
+        <td>{{ "%.2f"|format(item.line_total or 0) }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

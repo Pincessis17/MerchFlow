@@ -1,0 +1,153 @@
+{% extends "platform/base.html" %}
+{% block content %}
+  <div class="grid" style="grid-template-columns: 1fr;">
+    <div class="card">
+      <h2>Create Tenant Subscriber</h2>
+      <form method="post" action="{{ url_for('platform.create_tenant') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="form-grid">
+          <div>
+            <label>Company Name</label>
+            <input name="company_name" required>
+          </div>
+          <div>
+            <label>Company Email</label>
+            <input name="company_email" type="email">
+          </div>
+          <div>
+            <label>Admin Name</label>
+            <input name="admin_name" required>
+          </div>
+          <div>
+            <label>Admin Email</label>
+            <input name="admin_email" type="email" required>
+          </div>
+          <div>
+            <label>Admin Password</label>
+            <input name="admin_password" type="password" required>
+          </div>
+          <div>
+            <label>Plan</label>
+            <select name="plan_id">
+              <option value="">-- none --</option>
+              {% for plan in plans %}
+                <option value="{{ plan.id }}">{{ plan.name }} ({{ plan.code }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Status</label>
+            <select name="status">
+              <option value="trial">trial</option>
+              <option value="active">active</option>
+              <option value="cancelled">cancelled</option>
+            </select>
+          </div>
+          <div>
+            <label>Billing Cycle</label>
+            <select name="billing_cycle">
+              <option value="monthly">monthly</option>
+              <option value="yearly">yearly</option>
+            </select>
+          </div>
+          <div>
+            <label>Amount</label>
+            <input name="amount" type="number" min="0" step="0.01" value="0">
+          </div>
+        </div>
+        <button class="btn" type="submit">Create Tenant</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Tenant Subscribers</h2>
+      <p>
+        <a class="btn" href="{{ url_for('platform.export_subscribers_csv') }}">Export CSV</a>
+      </p>
+      <form method="post" action="{{ url_for('platform.send_renewal_reminders') }}" style="margin-bottom: 10px;">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Send Renewal Reminders (Next 7 Days)</button>
+      </form>
+      {% if tenant_rows %}
+        <table>
+          <tr>
+            <th>ID</th>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Suspended</th>
+            <th>Plan</th>
+            <th>Billing</th>
+            <th>Amount</th>
+            <th>Subscription Controls</th>
+            <th>Tenant Controls</th>
+          </tr>
+          {% for row in tenant_rows %}
+            {% set company = row.company %}
+            {% set sub = row.subscription %}
+            <tr>
+              <td>{{ company.id }}</td>
+              <td>
+                <b>{{ company.name }}</b><br>
+                <span class="muted">{{ company.email or '-' }}</span>
+              </td>
+              <td>{{ company.status }}</td>
+              <td>{{ "yes" if company.is_suspended else "no" }}</td>
+              <td>{{ sub.plan.name if sub and sub.plan else "-" }}</td>
+              <td>{{ sub.billing_cycle if sub else "-" }}</td>
+              <td>{{ "%.2f"|format(sub.amount or 0) if sub else "-" }}</td>
+              <td>
+                {% if sub %}
+                  <form method="post" action="{{ url_for('platform.change_subscription', subscription_id=sub.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <select name="plan_id">
+                      <option value="">-- keep --</option>
+                      {% for plan in plans %}
+                        <option value="{{ plan.id }}" {% if sub.plan_id == plan.id %}selected{% endif %}>{{ plan.name }}</option>
+                      {% endfor %}
+                    </select>
+                    <select name="status">
+                      <option value="trial" {% if sub.status == 'trial' %}selected{% endif %}>trial</option>
+                      <option value="active" {% if sub.status == 'active' %}selected{% endif %}>active</option>
+                      <option value="cancelled" {% if sub.status == 'cancelled' %}selected{% endif %}>cancelled</option>
+                    </select>
+                    <select name="billing_cycle">
+                      <option value="monthly" {% if sub.billing_cycle == 'monthly' %}selected{% endif %}>monthly</option>
+                      <option value="yearly" {% if sub.billing_cycle == 'yearly' %}selected{% endif %}>yearly</option>
+                    </select>
+                    <input name="amount" type="number" min="0" step="0.01" value="{{ sub.amount or 0 }}">
+                    <button class="btn" type="submit">Update</button>
+                  </form>
+                {% else %}
+                  <span class="muted">No subscription record</span>
+                {% endif %}
+              </td>
+              <td>
+                <form method="post" action="{{ url_for('platform.suspend_tenant', company_id=company.id) }}">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-warn" type="submit">Suspend</button>
+                </form>
+                <form method="post" action="{{ url_for('platform.activate_tenant', company_id=company.id) }}">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn" type="submit">Activate</button>
+                </form>
+                <form method="post" action="{{ url_for('platform.cancel_tenant', company_id=company.id) }}">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-danger" type="submit">Cancel</button>
+                </form>
+                {% if sub %}
+                  <form method="post" action="{{ url_for('platform.mark_subscription_payment_failed', subscription_id=sub.id) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input name="reason" placeholder="Payment failed reason">
+                    <button class="btn btn-danger" type="submit">Mark Payment Failed</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p class="muted">No tenants yet.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

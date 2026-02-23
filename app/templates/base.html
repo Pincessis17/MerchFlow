@@ -49,6 +49,11 @@
              Reports
           </a>
 
+          <a href="{{ url_for('invoices.list_invoices') }}"
+             class="{% if request.blueprint == 'invoices' %}active{% endif %}">
+             Invoices
+          </a>
+
           <!-- Financial (Feature Controlled) -->
           {% set can_access_financial = has_feature_access('financial') %}
 
@@ -63,9 +68,9 @@
 
           <!-- Admin (Only Platform Owner) -->
           {% if session.get('user', {}).get('is_platform_admin') %}
-            <a href="{{ url_for('admin.admin_home') }}"
-               class="{% if request.blueprint == 'admin' %}active{% endif %}">
-               Admin
+            <a href="{{ url_for('platform.dashboard') }}"
+               class="{% if request.blueprint == 'platform' %}active{% endif %}">
+               Platform
             </a>
           {% endif %}
 

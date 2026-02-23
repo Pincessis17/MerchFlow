@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Create Invoice</h2>
+  <p><a href="{{ url_for('invoices.list_invoices') }}">← Back to Invoices</a></p>
+
+  <form method="post">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <div class="grid2">
+      <div>
+        <label>Customer Name *</label>
+        <input name="customer_name" required>
+      </div>
+      <div>
+        <label>Customer Email</label>
+        <input name="customer_email" type="email">
+      </div>
+    </div>
+
+    <div>
+      <label>Billing Address</label>
+      <input name="billing_address">
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label>Issue Date</label>
+        <input name="issue_date" type="date" value="{{ today }}">
+      </div>
+      <div>
+        <label>Due Date</label>
+        <input name="due_date" type="date">
+      </div>
+    </div>
+
+    <h3>Line Items</h3>
+    <table>
+      <tr>
+        <th>Description</th>
+        <th>Quantity</th>
+        <th>Unit Price</th>
+      </tr>
+      {% for i in range(1, 6) %}
+        <tr>
+          <td><input name="item_description" placeholder="Item {{ i }}"></td>
+          <td><input name="item_quantity" type="number" min="0" step="0.01" value="{{ 1 if i == 1 else '' }}"></td>
+          <td><input name="item_unit_price" type="number" min="0" step="0.01"></td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <div class="grid2">
+      <div>
+        <label>Tax Rate (%)</label>
+        <input name="tax_rate" type="number" min="0" step="0.01" value="0">
+      </div>
+      <div>
+        <label>Discount Type</label>
+        <select name="discount_type">
+          <option value="none">None</option>
+          <option value="percent">Percent</option>
+          <option value="fixed">Fixed Amount</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label>Discount Value</label>
+      <input name="discount_value" type="number" min="0" step="0.01" value="0">
+    </div>
+
+    <div>
+      <label>Notes</label>
+      <input name="notes" placeholder="Optional note for invoice">
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap: wrap;">
+      <button type="submit" name="action" value="save_draft">Save as Draft</button>
+      <button type="submit" name="action" value="mark_paid">Save and Mark Paid</button>
+    </div>
+  </form>
+{% endblock %}

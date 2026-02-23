@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Invoices</h2>
+  <p>
+    <a class="btn" href="{{ url_for('invoices.create_invoice') }}">+ Create Invoice</a>
+    <a class="btn" href="{{ url_for('invoices.invoice_settings') }}">Invoice Settings</a>
+  </p>
+
+  {% if tenant_notifications %}
+    <div class="card">
+      <h3>Notifications</h3>
+      <form method="post" action="{{ url_for('invoices.mark_tenant_notifications_read') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <table>
+          <tr>
+            <th>Mark</th><th>Title</th><th>Message</th><th>When</th>
+          </tr>
+          {% for n in tenant_notifications %}
+            <tr>
+              <td><input type="checkbox" name="notification_ids" value="{{ n.id }}"></td>
+              <td>{{ n.title }}</td>
+              <td>{{ n.message }}</td>
+              <td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+        <button class="btn" type="submit">Mark Selected Read</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {% if invoices %}
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Invoice</th>
+        <th>Customer</th>
+        <th>Status</th>
+        <th>Total</th>
+        <th>Issue Date</th>
+        <th>Actions</th>
+      </tr>
+      {% for inv in invoices %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ inv.invoice_number }}</td>
+          <td>{{ inv.customer_name }}</td>
+          <td>{{ inv.status }}</td>
+          <td>{{ "%.2f"|format(inv.total_amount or 0) }} {{ inv.currency }}</td>
+          <td>{{ inv.issue_date.strftime('%Y-%m-%d') }}</td>
+          <td>
+            <a href="{{ url_for('invoices.view_invoice', invoice_id=inv.id) }}">View</a> |
+            <a href="{{ url_for('invoices.download_invoice_pdf', invoice_id=inv.id) }}">PDF</a> |
+            <a href="{{ url_for('invoices.print_invoice', invoice_id=inv.id) }}" target="_blank">Print</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No invoices yet.</p>
+  {% endif %}
+{% endblock %}

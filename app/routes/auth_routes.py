@@ -2,8 +2,10 @@ from collections import defaultdict, deque
 from time import time
 
 from flask import Blueprint, current_app, render_template, request, redirect, url_for, flash, session
-from ..models import User
+from .. import db
+from ..models import LoginAttempt, User
 from ..utils.auth import login_required
+from ..utils.notifications import create_platform_notification
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -32,6 +34,18 @@ def _prune_attempts(ip_address: str, now: float):
     return attempts
 
 
+def _record_login_attempt(*, email: str, ip_address: str, is_success: bool, company_id=None, abuse_score: int = 0):
+    attempt = LoginAttempt(
+        company_id=company_id,
+        email=email,
+        ip_address=ip_address,
+        user_agent=(request.headers.get("User-Agent") or "")[:400],
+        is_success=is_success,
+        abuse_score=max(int(abuse_score or 0), 0),
+    )
+    db.session.add(attempt)
+
+
 # ======================================================
 # LOGIN
 # ======================================================
@@ -49,6 +63,20 @@ def login():
         attempts = _prune_attempts(ip_address, now)
 
         if len(attempts) >= FAILED_LOGIN_MAX_ATTEMPTS:
+            _record_login_attempt(
+                email=(request.form.get("email") or "").strip().lower(),
+                ip_address=ip_address,
+                is_success=False,
+                abuse_score=len(attempts),
+            )
+            create_platform_notification(
+                event_type="security.abuse_signal",
+                title="Potential abuse signal detected",
+                message=f"Too many failed login attempts from IP {ip_address}.",
+                category="warning",
+                payload={"ip_address": ip_address, "attempts": len(attempts)},
+            )
+            db.session.commit()
             flash("Too many failed login attempts. Please try again in a few minutes.", "error")
             return render_template("login.html")
 
@@ -63,6 +91,13 @@ def login():
 
         if not user or not user.check_password(password):
             FAILED_LOGIN_ATTEMPTS[ip_address].append(now)
+            _record_login_attempt(
+                email=email,
+                ip_address=ip_address,
+                is_success=False,
+                abuse_score=len(FAILED_LOGIN_ATTEMPTS[ip_address]),
+            )
+            db.session.commit()
             flash("Invalid email or password.", "error")
             return render_template("login.html", email=email)
 
@@ -77,8 +112,16 @@ def login():
             "company_name": user.company.name if user.company else "",
             "email": user.email,
             "name": user.name,
+            "role": user.role,
             "is_platform_admin": _is_platform_admin_email(user.email),
         }
+        _record_login_attempt(
+            email=email,
+            ip_address=ip_address,
+            is_success=True,
+            company_id=user.company_id,
+        )
+        db.session.commit()
 
         flash(f"Welcome back, {user.name}!", "success")
         return redirect(url_for("home"))

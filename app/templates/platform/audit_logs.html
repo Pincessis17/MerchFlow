@@ -1,0 +1,32 @@
+{% extends "platform/base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Platform Audit Logs</h2>
+    {% if logs %}
+      <table>
+        <tr>
+          <th>Time</th>
+          <th>Action</th>
+          <th>Actor</th>
+          <th>Target</th>
+          <th>Company</th>
+          <th>IP</th>
+          <th>Details</th>
+        </tr>
+        {% for log in logs %}
+          <tr>
+            <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ log.action }}</td>
+            <td>{{ log.actor_email or '-' }}</td>
+            <td>{{ log.target_type }} {{ log.target_id or '' }}</td>
+            <td>{{ log.company_id or '-' }}</td>
+            <td>{{ log.ip_address or '-' }}</td>
+            <td>{{ log.details or '-' }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted">No logs available.</p>
+    {% endif %}
+  </div>
+{% endblock %}

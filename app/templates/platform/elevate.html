@@ -1,0 +1,18 @@
+{% extends "platform/base.html" %}
+{% block content %}
+  <div class="grid">
+    <div class="card" style="max-width: 520px;">
+      <h2>Elevated Authentication</h2>
+      <p class="muted">
+        Re-enter your password to access sensitive platform controls.
+      </p>
+      <form method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ next_url }}">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required>
+        <button class="btn" type="submit">Verify and Continue</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

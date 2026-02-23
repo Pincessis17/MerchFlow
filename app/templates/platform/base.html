@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title or "Platform Console" }}</title>
+  <style>
+    :root {
+      --bg: #070d1a;
+      --card: #0e1930;
+      --line: #22345f;
+      --text: #eef4ff;
+      --muted: #9cb0d9;
+      --accent: #62a0ff;
+      --warn: #ffce6b;
+      --danger: #ff6b6b;
+      --ok: #37d67a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #050914, var(--bg));
+      color: var(--text);
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+    }
+    .container { max-width: 1250px; margin: 0 auto; padding: 20px; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(14, 25, 48, 0.95);
+      position: sticky;
+      top: 10px;
+      z-index: 2;
+    }
+    .brand { font-weight: 700; letter-spacing: 0.2px; }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--muted);
+    }
+    .nav { display: flex; gap: 10px; flex-wrap: wrap; }
+    .nav a, .nav button {
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #112141;
+      cursor: pointer;
+    }
+    .nav a.active { border-color: var(--accent); }
+    .grid {
+      margin-top: 16px;
+      display: grid;
+      gap: 12px;
+    }
+    .cards { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      background: var(--card);
+    }
+    .metric { font-size: 28px; font-weight: 700; margin: 8px 0 4px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .flash { margin-top: 12px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); }
+    .flash.error { border-color: #5c2a38; background: rgba(255, 107, 107, 0.13); }
+    .flash.success { border-color: #24513e; background: rgba(55, 214, 122, 0.14); }
+    .flash.info { border-color: #2a4d8f; background: rgba(98, 160, 255, 0.14); }
+    .flash.warning { border-color: #6c5931; background: rgba(255, 206, 107, 0.15); }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; }
+    th { color: var(--muted); font-weight: 600; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #10213f;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .form-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    .btn {
+      border: 1px solid var(--line);
+      background: #14305e;
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .btn-danger { background: #5a2330; }
+    .btn-warn { background: #6f5320; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">Platform Console</div>
+      <div class="nav">
+        <a href="{{ url_for('platform.dashboard') }}" class="{% if request.endpoint == 'platform.dashboard' %}active{% endif %}">Dashboard</a>
+        <a href="{{ url_for('platform.tenants') }}" class="{% if request.endpoint == 'platform.tenants' %}active{% endif %}">Tenants</a>
+        <a href="{{ url_for('platform.plans') }}" class="{% if request.endpoint == 'platform.plans' %}active{% endif %}">Plans</a>
+        <a href="{{ url_for('platform.audit_logs') }}" class="{% if request.endpoint == 'platform.audit_logs' %}active{% endif %}">Audit Logs</a>
+        <a href="{{ url_for('home') }}">Tenant App</a>
+      </div>
+      <div class="pill">{{ session.get('user', {}).get('email', '') }}</div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

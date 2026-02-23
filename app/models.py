@@ -18,6 +18,18 @@ class Company(db.Model):
     email = db.Column(db.String(120))
     phone = db.Column(db.String(60))
     address = db.Column(db.String(200))
+    status = db.Column(db.String(20), nullable=False, default="trial", index=True)
+    is_suspended = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    suspended_at = db.Column(db.DateTime)
+    trial_ends_at = db.Column(db.DateTime)
+
+    # Tenant branding and invoice preferences
+    logo_path = db.Column(db.String(255))
+    brand_color = db.Column(db.String(20), default="#5b8cff")
+    invoice_footer = db.Column(db.String(500))
+    payment_instructions = db.Column(db.String(500))
+    invoice_number_prefix = db.Column(db.String(20), default="INV")
+    invoice_next_number = db.Column(db.Integer, nullable=False, default=1)
 
     created_at = db.Column(
         db.DateTime,
@@ -34,6 +46,24 @@ class Company(db.Model):
     purchases = db.relationship("Purchase", back_populates="company", cascade="all, delete-orphan")
     expenses = db.relationship("Expense", back_populates="company", cascade="all, delete-orphan")
     feature_access = db.relationship("FeatureAccess", back_populates="company", cascade="all, delete-orphan")
+    subscriptions = db.relationship(
+        "TenantSubscription",
+        back_populates="company",
+        cascade="all, delete-orphan",
+        order_by="TenantSubscription.created_at.desc()",
+    )
+    invoices = db.relationship("Invoice", back_populates="company", cascade="all, delete-orphan")
+    invoice_settings = db.relationship(
+        "InvoiceSetting",
+        back_populates="company",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+    tenant_notifications = db.relationship(
+        "TenantNotification",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<Company {self.name}>"
@@ -57,6 +87,7 @@ class User(db.Model):
 
     email = db.Column(db.String(120), nullable=False, index=True)
     name = db.Column(db.String(80), nullable=False, default="User")
+    role = db.Column(db.String(20), nullable=False, default="staff", index=True)
 
     password_hash = db.Column(db.String(255), nullable=False)
 
@@ -68,6 +99,7 @@ class User(db.Model):
     )
 
     company = db.relationship("Company", back_populates="users")
+    invoices_created = db.relationship("Invoice", back_populates="created_by_user")
 
     __table_args__ = (
         UniqueConstraint("company_id", "email", name="uq_company_user_email"),
@@ -407,3 +439,381 @@ class Expense(db.Model):
 
     def __repr__(self):
         return f"<Expense {self.id}>"
+
+
+# =====================================================
+# SUBSCRIPTION PLAN (Platform Level)
+# =====================================================
+class SubscriptionPlan(db.Model):
+    __tablename__ = "subscription_plan"
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(40), nullable=False, unique=True, index=True)
+    name = db.Column(db.String(80), nullable=False)
+    monthly_price = db.Column(db.Float, nullable=False, default=0.0)
+    yearly_price = db.Column(db.Float)
+    max_users = db.Column(db.Integer)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    subscriptions = db.relationship("TenantSubscription", back_populates="plan")
+
+    __table_args__ = (
+        CheckConstraint("monthly_price >= 0"),
+        CheckConstraint("yearly_price IS NULL OR yearly_price >= 0"),
+    )
+
+    def __repr__(self):
+        return f"<SubscriptionPlan {self.code}>"
+
+
+# =====================================================
+# TENANT SUBSCRIPTION
+# =====================================================
+class TenantSubscription(db.Model):
+    __tablename__ = "tenant_subscription"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    plan_id = db.Column(
+        db.Integer,
+        db.ForeignKey("subscription_plan.id", ondelete="SET NULL"),
+        index=True,
+    )
+
+    status = db.Column(db.String(20), nullable=False, default="trial", index=True)
+    billing_cycle = db.Column(db.String(20), nullable=False, default="monthly")
+
+    amount = db.Column(db.Float, nullable=False, default=0.0)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    trial_ends_at = db.Column(db.DateTime)
+    current_period_end = db.Column(db.DateTime)
+    cancelled_at = db.Column(db.DateTime)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    company = db.relationship("Company", back_populates="subscriptions")
+    plan = db.relationship("SubscriptionPlan", back_populates="subscriptions")
+
+    __table_args__ = (
+        CheckConstraint("amount >= 0"),
+    )
+
+    def __repr__(self):
+        return f"<TenantSubscription company={self.company_id} status={self.status}>"
+
+
+# =====================================================
+# PLATFORM NOTIFICATION
+# =====================================================
+class PlatformNotification(db.Model):
+    __tablename__ = "platform_notification"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="SET NULL"),
+        index=True,
+    )
+    category = db.Column(db.String(40), nullable=False, default="info", index=True)
+    event_type = db.Column(db.String(80), nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.String(600), nullable=False)
+    payload_json = db.Column(db.Text)
+    is_read = db.Column(db.Boolean, nullable=False, default=False, index=True)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    def __repr__(self):
+        return f"<PlatformNotification {self.event_type}>"
+
+
+# =====================================================
+# TENANT NOTIFICATION
+# =====================================================
+class TenantNotification(db.Model):
+    __tablename__ = "tenant_notification"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    category = db.Column(db.String(40), nullable=False, default="info", index=True)
+    event_type = db.Column(db.String(80), nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.String(600), nullable=False)
+    payload_json = db.Column(db.Text)
+    is_read = db.Column(db.Boolean, nullable=False, default=False, index=True)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    company = db.relationship("Company", back_populates="tenant_notifications")
+
+    def __repr__(self):
+        return f"<TenantNotification {self.event_type}>"
+
+
+# =====================================================
+# PLATFORM AUDIT LOG
+# =====================================================
+class PlatformAuditLog(db.Model):
+    __tablename__ = "platform_audit_log"
+
+    id = db.Column(db.Integer, primary_key=True)
+    actor_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id", ondelete="SET NULL"),
+        index=True,
+    )
+    actor_email = db.Column(db.String(120), index=True)
+    action = db.Column(db.String(120), nullable=False, index=True)
+    target_type = db.Column(db.String(80), nullable=False, index=True)
+    target_id = db.Column(db.String(120))
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="SET NULL"),
+        index=True,
+    )
+    details = db.Column(db.Text)
+    ip_address = db.Column(db.String(64))
+    user_agent = db.Column(db.String(400))
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    def __repr__(self):
+        return f"<PlatformAuditLog {self.action}>"
+
+
+# =====================================================
+# LOGIN ATTEMPT LOG
+# =====================================================
+class LoginAttempt(db.Model):
+    __tablename__ = "login_attempt"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="SET NULL"),
+        index=True,
+    )
+    email = db.Column(db.String(120), index=True)
+    ip_address = db.Column(db.String(64), index=True)
+    user_agent = db.Column(db.String(400))
+    is_success = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    abuse_score = db.Column(db.Integer, nullable=False, default=0)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    __table_args__ = (
+        CheckConstraint("abuse_score >= 0"),
+    )
+
+    def __repr__(self):
+        return f"<LoginAttempt {self.email} success={self.is_success}>"
+
+
+# =====================================================
+# INVOICE SETTINGS (Tenant Level)
+# =====================================================
+class InvoiceSetting(db.Model):
+    __tablename__ = "invoice_setting"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    logo_path = db.Column(db.String(255))
+    brand_color = db.Column(db.String(20), default="#5b8cff")
+    footer_text = db.Column(db.String(500))
+    payment_instructions = db.Column(db.String(500))
+    numbering_format = db.Column(db.String(30), default="{prefix}-{yyyy}-{seq:05d}")
+    prefix = db.Column(db.String(20), default="INV")
+    next_number = db.Column(db.Integer, nullable=False, default=1)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    company = db.relationship("Company", back_populates="invoice_settings")
+
+    __table_args__ = (
+        CheckConstraint("next_number >= 1"),
+    )
+
+    def __repr__(self):
+        return f"<InvoiceSetting company={self.company_id}>"
+
+
+# =====================================================
+# INVOICE (Tenant Level)
+# =====================================================
+class Invoice(db.Model):
+    __tablename__ = "invoice"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_by_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id", ondelete="SET NULL"),
+        index=True,
+    )
+
+    invoice_number = db.Column(db.String(60), nullable=False, index=True)
+    customer_name = db.Column(db.String(120), nullable=False)
+    customer_email = db.Column(db.String(120))
+    billing_address = db.Column(db.String(300))
+
+    status = db.Column(db.String(20), nullable=False, default="draft", index=True)
+    currency = db.Column(db.String(10), nullable=False, default="GHS")
+
+    subtotal = db.Column(db.Float, nullable=False, default=0.0)
+    tax_rate = db.Column(db.Float, nullable=False, default=0.0)
+    tax_amount = db.Column(db.Float, nullable=False, default=0.0)
+    discount_type = db.Column(db.String(20), nullable=False, default="none")
+    discount_value = db.Column(db.Float, nullable=False, default=0.0)
+    discount_amount = db.Column(db.Float, nullable=False, default=0.0)
+    total_amount = db.Column(db.Float, nullable=False, default=0.0)
+
+    issue_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    due_date = db.Column(db.DateTime)
+    paid_at = db.Column(db.DateTime)
+    notes = db.Column(db.String(600))
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    company = db.relationship("Company", back_populates="invoices")
+    created_by_user = db.relationship("User", back_populates="invoices_created")
+    line_items = db.relationship(
+        "InvoiceLineItem",
+        back_populates="invoice",
+        cascade="all, delete-orphan",
+        order_by="InvoiceLineItem.sort_order.asc()",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "invoice_number", name="uq_company_invoice_number"),
+        CheckConstraint("subtotal >= 0"),
+        CheckConstraint("tax_rate >= 0"),
+        CheckConstraint("tax_amount >= 0"),
+        CheckConstraint("discount_value >= 0"),
+        CheckConstraint("discount_amount >= 0"),
+        CheckConstraint("total_amount >= 0"),
+    )
+
+    def __repr__(self):
+        return f"<Invoice {self.invoice_number}>"
+
+
+# =====================================================
+# INVOICE LINE ITEM
+# =====================================================
+class InvoiceLineItem(db.Model):
+    __tablename__ = "invoice_line_item"
+
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(
+        db.Integer,
+        db.ForeignKey("invoice.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    description = db.Column(db.String(300), nullable=False)
+    quantity = db.Column(db.Float, nullable=False, default=1.0)
+    unit_price = db.Column(db.Float, nullable=False, default=0.0)
+    line_total = db.Column(db.Float, nullable=False, default=0.0)
+    sort_order = db.Column(db.Integer, nullable=False, default=1)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True,
+    )
+
+    invoice = db.relationship("Invoice", back_populates="line_items")
+
+    __table_args__ = (
+        CheckConstraint("quantity > 0"),
+        CheckConstraint("unit_price >= 0"),
+        CheckConstraint("line_total >= 0"),
+    )
+
+    def __repr__(self):
+        return f"<InvoiceLineItem invoice={self.invoice_id}>"

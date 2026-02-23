@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Print {{ invoice.invoice_number }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
+    h1, h2, h3 { margin: 0 0 10px; }
+    .muted { color: #555; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #d4d4d4; padding: 8px; text-align: left; }
+    .right { text-align: right; }
+    .top { display: flex; justify-content: space-between; margin-bottom: 14px; }
+    @media print {
+      .noprint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="noprint" style="margin-bottom:12px;">
+    <button onclick="window.print()">Print</button>
+  </div>
+
+  <div class="top">
+    <div>
+      <h2>{{ company.name }}</h2>
+      <div class="muted">{{ company.email or "" }}</div>
+    </div>
+    <div class="right">
+      <h1>{{ invoice.invoice_number }}</h1>
+      <div>Status: {{ invoice.status|upper }}</div>
+    </div>
+  </div>
+
+  <h3>Customer</h3>
+  <div>{{ invoice.customer_name }}</div>
+  <div class="muted">{{ invoice.customer_email or "" }}</div>
+  <div class="muted">{{ invoice.billing_address or "" }}</div>
+
+  <table>
+    <tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>
+    {% for item in invoice.line_items %}
+      <tr>
+        <td>{{ item.description }}</td>
+        <td class="right">{{ "%.2f"|format(item.quantity or 0) }}</td>
+        <td class="right">{{ "%.2f"|format(item.unit_price or 0) }}</td>
+        <td class="right">{{ "%.2f"|format(item.line_total or 0) }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <table style="margin-top:14px; width: 360px; margin-left: auto;">
+    <tr><th>Subtotal</th><td class="right">{{ "%.2f"|format(invoice.subtotal or 0) }}</td></tr>
+    <tr><th>Tax</th><td class="right">{{ "%.2f"|format(invoice.tax_amount or 0) }}</td></tr>
+    <tr><th>Discount</th><td class="right">{{ "%.2f"|format(invoice.discount_amount or 0) }}</td></tr>
+    <tr><th>Total</th><td class="right">{{ "%.2f"|format(invoice.total_amount or 0) }} {{ invoice.currency }}</td></tr>
+  </table>
+
+  <div style="margin-top:20px;">
+    {% if settings and settings.footer_text %}
+      <div>{{ settings.footer_text }}</div>
+    {% elif company.invoice_footer %}
+      <div>{{ company.invoice_footer }}</div>
+    {% endif %}
+    {% if settings and settings.payment_instructions %}
+      <div class="muted">Payment instructions: {{ settings.payment_instructions }}</div>
+    {% elif company.payment_instructions %}
+      <div class="muted">Payment instructions: {{ company.payment_instructions }}</div>
+    {% endif %}
+  </div>
+</body>
+</html>

@@ -1,0 +1,195 @@
+{% extends "platform/base.html" %}
+{% block content %}
+  <div class="grid cards">
+    <div class="card">
+      <div class="muted">Active Subscribers</div>
+      <div class="metric">{{ active_count }}</div>
+    </div>
+    <div class="card">
+      <div class="muted">Trial Subscribers</div>
+      <div class="metric">{{ trial_count }}</div>
+    </div>
+    <div class="card">
+      <div class="muted">Cancelled Subscribers</div>
+      <div class="metric">{{ cancelled_count }}</div>
+    </div>
+    <div class="card">
+      <div class="muted">Suspended Tenants</div>
+      <div class="metric">{{ suspended_count }}</div>
+    </div>
+    <div class="card">
+      <div class="muted">MRR</div>
+      <div class="metric">{{ "%.2f"|format(mrr or 0) }}</div>
+    </div>
+    <div class="card">
+      <div class="muted">Churn Rate</div>
+      <div class="metric">{{ "%.2f"|format(churn_rate_pct or 0) }}%</div>
+    </div>
+    <div class="card">
+      <div class="muted">Conversion Rate</div>
+      <div class="metric">{{ "%.2f"|format(conversion_rate_pct or 0) }}%</div>
+    </div>
+    <div class="card">
+      <div class="muted">Failed Logins (24h)</div>
+      <div class="metric">{{ failed_logins_24h }}</div>
+    </div>
+    <div class="card">
+      <div class="muted">Database</div>
+      <div class="metric">{% if db_ok %}Healthy{% else %}Error{% endif %}</div>
+    </div>
+    <div class="card">
+      <div class="muted">Uptime (seconds)</div>
+      <div class="metric">{{ uptime_seconds }}</div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns: 1.2fr 1fr; align-items: start;">
+    <div class="card">
+      <h3>Revenue Trends (Monthly MRR Snapshot)</h3>
+      {% if monthly_revenue_trends %}
+        <table>
+          <tr><th>Month</th><th>Amount</th></tr>
+          {% for month, amount in monthly_revenue_trends %}
+            <tr><td>{{ month }}</td><td>{{ "%.2f"|format(amount) }}</td></tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p class="muted">No subscription revenue data yet.</p>
+      {% endif %}
+
+      <h3 style="margin-top:16px;">Plan Breakdown</h3>
+      {% if plan_breakdown %}
+        <table>
+          <tr><th>Plan</th><th>Active Tenants</th></tr>
+          {% for plan_name, count in plan_breakdown.items() %}
+            <tr><td>{{ plan_name }}</td><td>{{ count }}</td></tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p class="muted">No active subscriptions yet.</p>
+      {% endif %}
+
+      <h3 style="margin-top:16px;">Daily New Subscribers</h3>
+      <table>
+        <tr><th>Date</th><th>New Subscribers</th></tr>
+        {% for row in daily_new_subscribers %}
+          <tr><td>{{ row.date }}</td><td>{{ row.count }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Real-Time Notifications</h3>
+      {% if unread_notifications %}
+        <form method="post" action="{{ url_for('platform.mark_notifications_read') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <table>
+            <tr><th>Mark</th><th>Message</th><th>Time</th></tr>
+            {% for note in unread_notifications %}
+              <tr>
+                <td><input type="checkbox" name="notification_ids" value="{{ note.id }}"></td>
+                <td><b>{{ note.title }}</b><br><span class="muted">{{ note.message }}</span></td>
+                <td>{{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              </tr>
+            {% endfor %}
+          </table>
+          <button type="submit" class="btn">Mark Selected Read</button>
+        </form>
+      {% else %}
+        <p class="muted">No unread notifications.</p>
+      {% endif %}
+
+      <h3 style="margin-top:16px;">Abuse Signals (24h)</h3>
+      {% if abuse_signals %}
+        <table>
+          <tr><th>IP</th><th>Failed Attempts</th></tr>
+          {% for row in abuse_signals %}
+            <tr><td>{{ row.ip }}</td><td>{{ row.failed_count }}</td></tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p class="muted">No abuse thresholds reached.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>Usage Metrics per Tenant</h3>
+      {% if usage_metrics %}
+        <table>
+          <tr>
+            <th>Tenant</th><th>Users</th><th>Products</th><th>Sales</th><th>Invoices</th><th>Status</th>
+          </tr>
+          {% for row in usage_metrics %}
+            <tr>
+              <td>{{ row.company.name }}</td>
+              <td>{{ row.users }}</td>
+              <td>{{ row.products }}</td>
+              <td>{{ row.sales }}</td>
+              <td>{{ row.invoices }}</td>
+              <td>{{ row.subscription.status if row.subscription else row.company.status }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p class="muted">No tenants available.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3>Recent Failed Login Attempts</h3>
+      {% if recent_failed_logins %}
+        <table>
+          <tr><th>Email</th><th>IP</th><th>Score</th><th>Time</th></tr>
+          {% for row in recent_failed_logins %}
+            <tr>
+              <td>{{ row.email or '-' }}</td>
+              <td>{{ row.ip_address or '-' }}</td>
+              <td>{{ row.abuse_score }}</td>
+              <td>{{ row.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p class="muted">No failed login attempts logged yet.</p>
+      {% endif %}
+
+      <h3 style="margin-top:16px;">Recent Platform Audit Logs</h3>
+      {% if recent_audit_logs %}
+        <table>
+          <tr><th>Action</th><th>Actor</th><th>Target</th><th>Time</th></tr>
+          {% for log in recent_audit_logs %}
+            <tr>
+              <td>{{ log.action }}</td>
+              <td>{{ log.actor_email or '-' }}</td>
+              <td>{{ log.target_type }} {{ log.target_id or '' }}</td>
+              <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p class="muted">No audit logs yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    let latestId = {% if unread_notifications %}{{ unread_notifications[0].id }}{% else %}0{% endif %};
+    async function pollPlatformNotifications() {
+      try {
+        const response = await fetch("{{ url_for('platform.poll_notifications') }}?since_id=" + latestId, { credentials: "same-origin" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        const notes = payload.notifications || [];
+        if (notes.length > 0) {
+          latestId = notes[notes.length - 1].id;
+          window.location.reload();
+        }
+      } catch (err) {
+        // no-op: polling should never break primary dashboard
+      }
+    }
+    setInterval(pollPlatformNotifications, 15000);
+  </script>
+{% endblock %}

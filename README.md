@@ -47,6 +47,9 @@ Set these environment variables in your deployment platform (not in git):
 - `SECRET_KEY=<strong random secret>`
 - `PLATFORM_ADMIN_EMAILS=<comma-separated admin emails>`
 - `SESSION_COOKIE_SECURE=1`
+- `PLATFORM_ELEVATED_AUTH_WINDOW_SECONDS=900`
+- `GA4_MEASUREMENT_ID` and `GA4_API_SECRET` (optional)
+- SMTP vars (`SMTP_HOST`, `SMTP_USERNAME`, etc.) for email alerts (optional)
 
 The app will fail to start in production if `SECRET_KEY` or `DATABASE_URL` is missing.
 
@@ -56,3 +59,20 @@ The app will fail to start in production if `SECRET_KEY` or `DATABASE_URL` is mi
 - Rotate secrets if they were ever exposed.
 - Prefer HTTPS in production.
 - Keep database credentials only in environment variables (or a secrets manager later).
+
+## 4) SaaS architecture modules
+
+- **Platform owner console**: `/platform`
+  - Elevated authentication required (`/platform/elevate`)
+  - Tenant subscription analytics (MRR, churn, conversion)
+  - Plan management
+  - Tenant suspend/activate/cancel controls
+  - Real-time platform notifications
+  - Platform audit logs and CSV exports
+
+- **Tenant invoice module**: `/invoices`
+  - Create invoice with line items
+  - Tax + discount calculation
+  - Draft / paid status
+  - PDF export and print-friendly view
+  - Invoice branding settings (logo, color, footer, numbering)

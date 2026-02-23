@@ -18,6 +18,7 @@ def create_app():
     Config.validate()
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.config["APP_START_TIME"] = datetime.utcnow()
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -60,6 +61,8 @@ def create_app():
     from .routes.reports_routes import reports_bp
     from .routes.financial_routes import financial_bp
     from .routes.admin_routes import admin_bp
+    from .routes.platform_routes import platform_bp
+    from .routes.invoice_routes import invoices_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(sales_bp, url_prefix="/sales")
@@ -67,6 +70,8 @@ def create_app():
     app.register_blueprint(reports_bp, url_prefix="/reports")
     app.register_blueprint(financial_bp, url_prefix="/financial")
     app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(platform_bp, url_prefix="/platform")
+    app.register_blueprint(invoices_bp, url_prefix="/invoices")
 
     # ==================================================
     # CLI COMMANDS

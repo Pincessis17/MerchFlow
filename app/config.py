@@ -54,6 +54,27 @@ class Config:
     )
 
     PLATFORM_ADMIN_EMAILS = _admin_email_set()
+    PLATFORM_ELEVATED_AUTH_WINDOW_SECONDS = int(
+        os.environ.get("PLATFORM_ELEVATED_AUTH_WINDOW_SECONDS", "900")
+    )
+
+    # Analytics (GA4 Measurement Protocol)
+    GA4_MEASUREMENT_ID = os.environ.get("GA4_MEASUREMENT_ID")
+    GA4_API_SECRET = os.environ.get("GA4_API_SECRET")
+    GA4_ENVIRONMENT = os.environ.get("GA4_ENVIRONMENT") or APP_ENV
+
+    # Optional SMTP configuration for notification emails
+    SMTP_HOST = os.environ.get("SMTP_HOST")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+    SMTP_USERNAME = os.environ.get("SMTP_USERNAME")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+    SMTP_FROM_EMAIL = os.environ.get("SMTP_FROM_EMAIL")
+    SMTP_USE_TLS = _env_flag("SMTP_USE_TLS", default=True)
+
+    INVOICE_LOGO_UPLOAD_DIR = os.environ.get(
+        "INVOICE_LOGO_UPLOAD_DIR",
+        "app/static/uploads/invoice_logos",
+    )
 
     @classmethod
     def validate(cls):
