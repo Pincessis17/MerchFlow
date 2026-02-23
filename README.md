@@ -76,3 +76,25 @@ The app will fail to start in production if `SECRET_KEY` or `DATABASE_URL` is mi
   - Draft / paid status
   - PDF export and print-friendly view
   - Invoice branding settings (logo, color, footer, numbering)
+
+## 5) Self-service tenant data onboarding (CSV import)
+
+Tenant admins/managers can import inventory without platform-owner intervention:
+
+- Go to **Inventory** and use **Bulk Import (CSV)**.
+- Upload a CSV with at least:
+  - `sku` (or `code`)
+  - `name`
+- Optional columns:
+  - `stock_qty`, `unit`, `category`, `expiry_date`, `cost_price`, `selling_price`
+- Behavior:
+  - If SKU/code exists in the same company, it is **updated**
+  - If SKU/code is new, it is **created**
+  - Invalid rows are skipped with summary feedback
+- Import is tenant-scoped (`company_id`) and processed in batches for large files.
+
+You can tune limits with:
+
+- `INVENTORY_IMPORT_MAX_FILE_MB`
+- `INVENTORY_IMPORT_MAX_ROWS`
+- `INVENTORY_IMPORT_CHUNK_SIZE`

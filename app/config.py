@@ -75,6 +75,9 @@ class Config:
         "INVOICE_LOGO_UPLOAD_DIR",
         "app/static/uploads/invoice_logos",
     )
+    INVENTORY_IMPORT_MAX_FILE_MB = int(os.environ.get("INVENTORY_IMPORT_MAX_FILE_MB", "20"))
+    INVENTORY_IMPORT_MAX_ROWS = int(os.environ.get("INVENTORY_IMPORT_MAX_ROWS", "200000"))
+    INVENTORY_IMPORT_CHUNK_SIZE = int(os.environ.get("INVENTORY_IMPORT_CHUNK_SIZE", "1000"))
 
     @classmethod
     def validate(cls):

@@ -61,6 +61,36 @@
       <li>Use expiry date where relevant for safer stock handling.</li>
       <li>Set quantity to zero for out-of-stock products instead of deleting immediately.</li>
     </ul>
+
+    <hr style="border: none; border-top: 1px solid rgba(255,255,255,.12); margin: 16px 0;">
+
+    <h3>Bulk Import (CSV)</h3>
+    <p class="muted" style="margin-top:0;">
+      Tenant admins/managers can upload inventory directly. The system creates new products
+      and updates existing products by <strong>SKU/Code</strong>.
+    </p>
+
+    <form
+      method="POST"
+      action="{{ url_for('inventory.import_products_csv') }}"
+      enctype="multipart/form-data"
+    >
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label for="products_csv">Inventory CSV file</label><br>
+        <input id="products_csv" name="products_csv" type="file" accept=".csv,text/csv" required>
+      </div>
+      <button type="submit">Import Inventory CSV</button>
+    </form>
+
+    <p class="muted" style="margin-top:10px;">
+      Required columns: <code>sku</code> (or <code>code</code>) and <code>name</code>. <br>
+      Optional: <code>stock_qty</code>, <code>unit</code>, <code>category</code>, <code>expiry_date</code>,
+      <code>cost_price</code>, <code>selling_price</code>.
+    </p>
+    <a href="{{ url_for('inventory.download_inventory_import_template') }}">
+      Download CSV template
+    </a>
   </div>
 </div>
 
