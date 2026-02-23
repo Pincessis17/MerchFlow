@@ -5,9 +5,16 @@ from flask import Flask, render_template, session, g, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import func
+from flask_wtf import CSRFProtect
+from flask_limiter import Limiter
+from flask_liniter.util import get_remote_address
+
 
 from .config import Config
 
+limiter = Limiter(key_func=get_remote_address)
+
+csrf = CSRFProtect()
 db = SQLAlchemy()
 migrate = Migrate()
 
@@ -16,9 +23,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    limiter.init_app(app)
     db.init_app(app)
     migrate.init_app(app, db)
-
+    csrf.init_app(app)
     # ==================================================
     # BLUEPRINTS
     # ==================================================

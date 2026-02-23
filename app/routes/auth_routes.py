@@ -3,13 +3,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from .. import db
 from ..models import User
-
+from flask_limiter import Limiter
+from flask import current_app
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
 # ======================================================
 # LOGIN
 # ======================================================
+@limiter.limit("5 per minute")
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     user_session = session.get("user")
