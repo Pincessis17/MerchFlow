@@ -15,7 +15,11 @@
 
         <!-- Brand -->
         <div class="brand">
-          <div class="logo">MF</div>
+          <img
+            src="{{ url_for('static', filename='branding/merchflow-mark.svg') }}"
+            alt="MerchFlow logo mark"
+            class="brand-mark"
+          >
           <div>
             <strong>MerchFlow</strong>
             {% if session.get('user') %}

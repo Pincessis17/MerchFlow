@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>{{ title or "PharmacyApp" }}</title>
+  <title>{{ title or "MerchFlow" }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
-      --bg:#0b1220;
-      --card:#111a2e;
-      --muted:#8ea0c4;
+      --bg:#08111f;
+      --card:#101c32;
+      --muted:#95abcf;
       --text:#eaf0ff;
-      --line:#233257;
-      --accent:#5b8cff;
+      --line:#24395f;
+      --accent:#24a160;
+      --accent2:#e8b12b;
       --danger:#ff6b6b;
       --ok:#2ee59d;
       --info:#77b6ff;
@@ -22,27 +23,54 @@
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(900px 500px at 10% 10%, #14214a 0%, var(--bg) 60%) fixed;
+      background:
+        radial-gradient(1100px 560px at 10% -10%, rgba(36,161,96,.20), transparent 60%),
+        radial-gradient(900px 500px at 90% 0%, rgba(232,177,43,.16), transparent 58%),
+        linear-gradient(180deg, #060d19, var(--bg));
       color: var(--text);
+      min-height: 100vh;
     }
     .wrap{ max-width:1100px; margin:0 auto; padding:22px; }
     .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:14px 16px; border:1px solid var(--line);
-      background: rgba(17,26,46,.85);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 16px;
+      border:1px solid var(--line);
+      background: rgba(16,28,50,.86);
       box-shadow: var(--shadow);
       border-radius: var(--radius);
-      position: sticky; top: 12px; backdrop-filter: blur(8px);
+      position: sticky;
+      top: 12px;
+      backdrop-filter: blur(8px);
       z-index: 10;
+      gap: 10px;
     }
-    .brand{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px; }
-    .logo{
-      width:34px; height:34px; border-radius:10px;
-      background: linear-gradient(135deg, var(--accent), #7c5cff);
-      display:grid; place-items:center; box-shadow: 0 10px 18px rgba(91,140,255,.25);
-      font-weight:900;
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:700;
+      letter-spacing:.2px;
+      min-width: 200px;
     }
-    nav{ display:flex; gap:10px; flex-wrap:wrap; }
+    .brand img{
+      width:36px;
+      height:36px;
+      display:block;
+      filter: drop-shadow(0 8px 16px rgba(36,161,96,.22));
+    }
+    .brand-name{
+      font-size: 17px;
+      line-height: 1.05;
+    }
+    .company-name{
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    nav{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
     nav a{
       color: var(--text);
       text-decoration:none;
@@ -50,27 +78,47 @@
       border:1px solid transparent;
       border-radius: 10px;
       opacity:.92;
+      font-weight: 600;
+      font-size: 14px;
     }
     nav a:hover{ border-color: var(--line); background: rgba(255,255,255,.03); }
-    .userbox{ color: var(--muted); font-size: 14px; }
+    .userbox{
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     .userbox a{ color: var(--text); text-decoration:none; margin-left:6px; }
+    .userbox form{
+      display: inline;
+      width: auto;
+      margin: 0;
+      padding: 0;
+    }
     .card{
       margin-top:16px;
-      background: rgba(17,26,46,.85);
+      background: rgba(16,28,50,.86);
       border:1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       padding: 18px;
     }
     h1,h2,h3{ margin:0 0 12px 0; }
-    .flash{ padding: 10px 12px; border-radius: 12px; margin:10px 0; border:1px solid var(--line); }
+    .flash{
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin:10px 0;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.02);
+    }
     .flash.error{ background: rgba(255,107,107,.12); color: #ffd2d2; border-color: rgba(255,107,107,.25); }
     .flash.success{ background: rgba(46,229,157,.12); color: #caffea; border-color: rgba(46,229,157,.25); }
     .flash.info{ background: rgba(119,182,255,.12); color: #d6ecff; border-color: rgba(119,182,255,.25); }
 
-    /* forms */
     form{ display:grid; gap: 10px; }
-    label{ color: var(--muted); font-size: 14px; }
+    label{ color: var(--muted); font-size: 14px; font-weight: 600; }
     input, select{
       width:100%;
       padding: 10px 12px;
@@ -80,17 +128,17 @@
       color: var(--text);
       outline:none;
     }
-    input:focus, select:focus{ border-color: rgba(91,140,255,.6); }
+    input:focus, select:focus{ border-color: rgba(36,161,96,.55); }
     button{
       padding: 10px 14px;
       border-radius: 12px;
-      border:1px solid rgba(91,140,255,.6);
-      background: rgba(91,140,255,.14);
+      border:1px solid rgba(36,161,96,.55);
+      background: rgba(36,161,96,.16);
       color: var(--text);
       cursor:pointer;
       font-weight:600;
     }
-    button:hover{ background: rgba(91,140,255,.22); }
+    button:hover{ background: rgba(36,161,96,.24); }
     table{
       width:100%;
       border-collapse: collapse;
@@ -104,69 +152,105 @@
     .grid2{ display:grid; gap:14px; grid-template-columns: 1fr; }
     @media (min-width: 900px){ .grid2{ grid-template-columns: 1fr 1fr; } }
     .muted{ color: var(--muted); }
+
+    /* Dedicated auth page shell */
+    body.auth-page{
+      background: #f0f2f4;
+      color: #1c2a34;
+    }
+    .auth-wrap{
+      max-width: 1250px;
+      padding-top: 24px;
+      padding-bottom: 24px;
+    }
+    @media (max-width: 940px){
+      .topbar{ flex-wrap: wrap; }
+      nav{ justify-content: flex-start; }
+      .userbox{ white-space: normal; }
+    }
   </style>
 </head>
-<body>
-  <div class="wrap">
+{% set is_login_page = request.endpoint == 'auth.login' %}
+<body class="{% if is_login_page %}auth-page{% endif %}">
+  <div class="wrap {% if is_login_page %}auth-wrap{% endif %}">
 
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo">Rx</div>
-        <div>PharmacyApp</div>
+    {% if not is_login_page %}
+      {% set user = session.get('user') %}
+      {% set role = (user or {}).get('role') %}
+
+      <div class="topbar">
+        <div class="brand">
+          <img src="{{ url_for('static', filename='branding/merchflow-mark.svg') }}" alt="MerchFlow logo mark">
+          <div>
+            <div class="brand-name">MerchFlow</div>
+            {% if user and user.get('company_name') %}
+              <div class="company-name">{{ user.get('company_name') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <nav>
+          <a href="{{ url_for('home') }}">Home</a>
+          <a href="{{ url_for('sales.sales_home') }}">Sales</a>
+          <a href="{{ url_for('inventory.inventory_home') }}">Inventory</a>
+          <a href="{{ url_for('reports.reports_home') }}">Reports</a>
+          <a href="{{ url_for('invoices.list_invoices') }}">Invoices</a>
+
+          {% if role in ['admin', 'accountant'] %}
+            <a href="{{ url_for('financial.financial_home') }}">Financial</a>
+          {% endif %}
+
+          {% if session.get('user', {}).get('is_platform_admin') %}
+            <a href="{{ url_for('platform.dashboard') }}">Platform</a>
+          {% endif %}
+        </nav>
+
+        <div class="userbox">
+          {% if user %}
+            Hi, <strong style="color:var(--text)">{{ user.get('name','User') }}</strong>
+            <span class="muted">({{ role }})</span>
+            —
+            <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline;">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button
+                type="submit"
+                style="padding:0; border:none; background:none; color:var(--text); cursor:pointer; text-decoration:underline;"
+              >
+                Logout
+              </button>
+            </form>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}">Login</a>
+          {% endif %}
+        </div>
       </div>
-
-      <nav>
-        <a href="{{ url_for('home') }}">Home</a>
-        <a href="{{ url_for('sales.sales_home') }}">Sales</a>
-        <a href="{{ url_for('inventory.inventory_home') }}">Inventory</a>
-        <a href="{{ url_for('reports.reports_home') }}">Reports</a>
-        <a href="{{ url_for('invoices.list_invoices') }}">Invoices</a>
-
-        {% set user = session.get('user') %}
-        {% set role = (user or {}).get('role') %}
-        {% if role in ['admin', 'accountant'] %}
-          <a href="{{ url_for('financial.financial_home') }}">Financial</a>
-        {% endif %}
-
-        {% if session.get('user', {}).get('is_platform_admin') %}
-          <a href="{{ url_for('platform.dashboard') }}">Platform</a>
-        {% endif %}
-      </nav>
-
-      <div class="userbox">
-        {% if user %}
-          Hi, <strong style="color:var(--text)">{{ user.get('name','User') }}</strong>
-          <span class="muted">({{ role }})</span>
-          —
-          <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline;">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-            <button
-              type="submit"
-              style="padding:0; border:none; background:none; color:var(--text); cursor:pointer; text-decoration:underline;"
-            >
-              Logout
-            </button>
-          </form>
-        {% else %}
-          <a href="{{ url_for('auth.login') }}">Login</a>
-        {% endif %}
-      </div>
-    </div>
+    {% endif %}
 
     {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
-        <div class="card">
-          {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-          {% endfor %}
-        </div>
+        {% if is_login_page %}
+          <div>
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="card">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
       {% endif %}
     {% endwith %}
 
-    <div class="card">
+    {% if not is_login_page %}
+      <div class="card">
+    {% endif %}
       {% block content %}{% endblock %}
-    </div>
-
+    {% if not is_login_page %}
+      </div>
+    {% endif %}
   </div>
 </body>
 </html>

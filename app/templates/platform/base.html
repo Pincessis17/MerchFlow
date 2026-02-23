@@ -37,7 +37,19 @@
       top: 10px;
       z-index: 2;
     }
-    .brand { font-weight: 700; letter-spacing: 0.2px; }
+    .brand {
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 30px;
+      height: 30px;
+      display: block;
+      filter: drop-shadow(0 8px 16px rgba(36,161,96,.22));
+    }
     .pill {
       border: 1px solid var(--line);
       border-radius: 999px;
@@ -101,7 +113,10 @@
 <body>
   <div class="container">
     <div class="topbar">
-      <div class="brand">Platform Console</div>
+      <div class="brand">
+        <img src="{{ url_for('static', filename='branding/merchflow-mark.svg') }}" alt="MerchFlow logo mark">
+        <span>MerchFlow Platform Console</span>
+      </div>
       <div class="nav">
         <a href="{{ url_for('platform.dashboard') }}" class="{% if request.endpoint == 'platform.dashboard' %}active{% endif %}">Dashboard</a>
         <a href="{{ url_for('platform.tenants') }}" class="{% if request.endpoint == 'platform.tenants' %}active{% endif %}">Tenants</a>

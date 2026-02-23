@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" role="img" aria-labelledby="title desc">
+  <title id="title">MerchFlow logo</title>
+  <desc id="desc">MerchFlow Business Management logo lockup.</desc>
+  <defs>
+    <linearGradient id="logoCartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#24A160"/>
+      <stop offset="100%" stop-color="#187A52"/>
+    </linearGradient>
+    <linearGradient id="logoSwooshGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E2A70C"/>
+      <stop offset="100%" stop-color="#F2CB3B"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(24 24)">
+    <path d="M44 34h12l9 58h74a6 6 0 0 0 5.78-4.45l11.2-40.2a6 6 0 0 0-5.78-7.35H58.1l-2-13.2A6 6 0 0 0 50.14 22H44a6 6 0 0 0 0 12Z" fill="url(#logoCartGradient)"/>
+    <path d="M67 103h73a6 6 0 0 1 0 12H67a6 6 0 0 1 0-12Z" fill="#1C8557"/>
+    <circle cx="76" cy="133" r="14" fill="#1B7F52"/>
+    <circle cx="128" cy="133" r="14" fill="#1B7F52"/>
+    <circle cx="76" cy="133" r="5.4" fill="#F2CB3B"/>
+    <circle cx="128" cy="133" r="5.4" fill="#F2CB3B"/>
+
+    <path d="M10 97c17-21 51-34 91-34 33 0 63 8 90 24" fill="none" stroke="url(#logoSwooshGradient)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M124 28l5.2-8.8 3.8 7 7.7.8-5.5 5.9 1.4 7.9-6.8-3.5-6.8 3.5 1.4-7.9-5.5-5.9 7.7-.8Z" fill="#F2CB3B"/>
+  </g>
+
+  <text x="240" y="120" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="82" font-weight="800" fill="#1A7B54">Merch</text>
+  <text x="474" y="120" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="82" font-weight="800" fill="#E9B22A">Flow</text>
+  <text x="242" y="168" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="48" font-weight="500" fill="#667780">Business Management</text>
+</svg>
