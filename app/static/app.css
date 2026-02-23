@@ -1,15 +1,15 @@
 :root{
-  --bg0:#070A12;
-  --bg1:#0B1430;
-  --card: rgba(255,255,255,.06);
-  --card2: rgba(255,255,255,.08);
-  --stroke: rgba(255,255,255,.10);
-  --text: rgba(255,255,255,.92);
-  --muted: rgba(255,255,255,.65);
-  --muted2: rgba(255,255,255,.48);
-  --accent: #5B7CFF;
+  --bg0:#06140D;
+  --bg1:#0E2319;
+  --card: rgba(18,46,33,.60);
+  --card2: rgba(29,68,49,.55);
+  --stroke: rgba(107,190,144,.25);
+  --text: rgba(240,250,243,.95);
+  --muted: rgba(209,228,216,.74);
+  --muted2: rgba(186,212,196,.56);
+  --accent: #24A160;
   --good: #37D67A;
-  --warn: #F6C177;
+  --warn: #E9B22A;
   --bad:  #FF5D6C;
 }
 
@@ -20,8 +20,8 @@ body{
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans";
   color: var(--text);
   background:
-    radial-gradient(1200px 600px at 20% -10%, rgba(91,124,255,.20), transparent 60%),
-    radial-gradient(1000px 600px at 90% 0%, rgba(55,214,122,.10), transparent 55%),
+    radial-gradient(1200px 600px at 20% -10%, rgba(36,161,96,.28), transparent 60%),
+    radial-gradient(1000px 600px at 90% 0%, rgba(233,178,42,.18), transparent 55%),
     linear-gradient(180deg, var(--bg0), var(--bg1));
 }
 
@@ -71,9 +71,9 @@ a:hover{ opacity:.9; }
   border-radius: 12px;
   display:grid;
   place-items:center;
-  background: linear-gradient(135deg, rgba(91,124,255,.95), rgba(91,124,255,.55));
-  border: 1px solid rgba(255,255,255,.14);
-  box-shadow: 0 10px 25px rgba(91,124,255,.25);
+  background: linear-gradient(135deg, rgba(36,161,96,.95), rgba(233,178,42,.82));
+  border: 1px solid rgba(233,178,42,.25);
+  box-shadow: 0 10px 25px rgba(36,161,96,.28);
   font-weight: 800;
 }
 .company-name{
@@ -95,8 +95,8 @@ a:hover{ opacity:.9; }
 }
 .navlinks a.active{
   color: var(--text);
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(36,161,96,.22);
+  border: 1px solid rgba(107,190,144,.46);
 }
 
 .userbox{
@@ -194,7 +194,7 @@ a:hover{ opacity:.9; }
   color: var(--muted);
 }
 .badge.good{ color: rgba(55,214,122,.95); border-color: rgba(55,214,122,.25); background: rgba(55,214,122,.08); }
-.badge.warn{ color: rgba(246,193,119,.95); border-color: rgba(246,193,119,.25); background: rgba(246,193,119,.08); }
+.badge.warn{ color: rgba(233,178,42,.95); border-color: rgba(233,178,42,.26); background: rgba(233,178,42,.10); }
 .badge.bad{  color: rgba(255,93,108,.95); border-color: rgba(255,93,108,.25); background: rgba(255,93,108,.08); }
 
 .panel{
@@ -240,8 +240,8 @@ a:hover{ opacity:.9; }
 }
 .btn:hover{ background: rgba(255,255,255,.09); }
 .btn.primary{
-  border-color: rgba(91,124,255,.35);
-  background: rgba(91,124,255,.18);
+  border-color: rgba(36,161,96,.52);
+  background: rgba(36,161,96,.24);
 }
 
 .flash{
@@ -254,7 +254,7 @@ a:hover{ opacity:.9; }
 }
 .flash.error{ border-color: rgba(255,93,108,.30); background: rgba(255,93,108,.10); color: rgba(255,255,255,.90); }
 .flash.success{ border-color: rgba(55,214,122,.30); background: rgba(55,214,122,.10); color: rgba(255,255,255,.90); }
-.flash.info{ border-color: rgba(91,124,255,.30); background: rgba(91,124,255,.10); color: rgba(255,255,255,.90); }
+.flash.info{ border-color: rgba(233,178,42,.36); background: rgba(233,178,42,.14); color: rgba(255,248,224,.95); }
 
 /* shared form/table styles for base-driven pages */
 form{
@@ -276,18 +276,18 @@ input, select, textarea{
   outline:none;
 }
 input:focus, select:focus, textarea:focus{
-  border-color: rgba(91,124,255,.65);
+  border-color: rgba(36,161,96,.72);
 }
 button{
   padding: 10px 14px;
   border-radius: 12px;
-  border:1px solid rgba(91,124,255,.6);
-  background: rgba(91,124,255,.14);
+  border:1px solid rgba(36,161,96,.58);
+  background: rgba(36,161,96,.18);
   color: var(--text);
   cursor:pointer;
   font-weight:600;
 }
-button:hover{ background: rgba(91,124,255,.22); }
+button:hover{ background: rgba(36,161,96,.27); }
 
 table{
   width:100%;
@@ -326,8 +326,8 @@ tr:hover td{ background: rgba(255,255,255,.02); }
 }
 .status-pill.draft{
   color: var(--warn);
-  border-color: rgba(246,193,119,.45);
-  background: rgba(246,193,119,.12);
+  border-color: rgba(233,178,42,.45);
+  background: rgba(233,178,42,.14);
 }
 .status-pill.paid{
   color: var(--good);
