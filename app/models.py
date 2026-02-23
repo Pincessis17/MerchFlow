@@ -140,6 +140,7 @@ class Product(db.Model):
 
     code = db.Column(db.String(80), nullable=False)
     name = db.Column(db.String(120), nullable=False)
+    unit = db.Column(db.String(40))
     category = db.Column(db.String(80))
 
     buying_price = db.Column(db.Float, nullable=False, default=0.0)
