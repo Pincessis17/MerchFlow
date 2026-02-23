@@ -1,7 +1,10 @@
 # app/config.py
 import os
 import secrets
+from typing import Set
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def _env_flag(name: str, default: bool = False) -> bool:
     raw = os.environ.get(name)
@@ -10,7 +13,11 @@ def _env_flag(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _admin_email_set() -> set[str]:
+def _app_env() -> str:
+    return (os.environ.get("APP_ENV") or os.environ.get("FLASK_ENV") or "development").strip().lower()
+
+
+def _admin_email_set() -> Set[str]:
     emails = set()
 
     primary = (os.environ.get("PLATFORM_ADMIN_EMAIL") or "").strip().lower()
@@ -26,9 +33,16 @@ def _admin_email_set() -> set[str]:
     return emails
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+    APP_ENV = _app_env()
+    IS_PRODUCTION = APP_ENV in {"production", "prod"}
 
-    # Production DB URL via environment. SQLite remains the local fallback.
+    # Local developer convenience fallback (production must set SECRET_KEY).
+    SECRET_KEY = os.environ.get("SECRET_KEY") or (
+        secrets.token_hex(32) if not IS_PRODUCTION else None
+    )
+
+    # Always read DB from environment when present.
+    # SQLite fallback is for local development only.
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///pharmacy.db")
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -36,7 +50,21 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _env_flag(
         "SESSION_COOKIE_SECURE",
-        default=not _env_flag("FLASK_DEBUG", default=False),
+        default=IS_PRODUCTION,
     )
 
     PLATFORM_ADMIN_EMAILS = _admin_email_set()
+
+    @classmethod
+    def validate(cls):
+        missing = []
+        if cls.IS_PRODUCTION:
+            if not os.environ.get("SECRET_KEY"):
+                missing.append("SECRET_KEY")
+            if not os.environ.get("DATABASE_URL"):
+                missing.append("DATABASE_URL")
+        if missing:
+            missing_csv = ", ".join(missing)
+            raise RuntimeError(
+                f"Missing required environment variables for production: {missing_csv}"
+            )

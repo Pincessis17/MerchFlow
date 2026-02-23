@@ -15,6 +15,7 @@ migrate = Migrate()
 
 
 def create_app():
+    Config.validate()
     app = Flask(__name__)
     app.config.from_object(Config)
 
