@@ -174,11 +174,11 @@
     }
   </style>
 </head>
-{% set is_login_page = request.endpoint == 'auth.login' %}
-<body class="{% if is_login_page %}auth-page{% endif %}">
-  <div class="wrap {% if is_login_page %}auth-wrap{% endif %}">
+{% set is_auth_page = request.endpoint in ['auth.login', 'auth.register'] %}
+<body class="{% if is_auth_page %}auth-page{% endif %}">
+  <div class="wrap {% if is_auth_page %}auth-wrap{% endif %}">
 
-    {% if not is_login_page %}
+    {% if not is_auth_page %}
       {% set user = session.get('user') %}
       {% set role = (user or {}).get('role') %}
 
@@ -232,7 +232,7 @@
 
     {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
-        {% if is_login_page %}
+        {% if is_auth_page %}
           <div>
             {% for category, message in messages %}
               <div class="flash {{ category }}">{{ message }}</div>
@@ -248,11 +248,11 @@
       {% endif %}
     {% endwith %}
 
-    {% if not is_login_page %}
+    {% if not is_auth_page %}
       <div class="card">
     {% endif %}
       {% block content %}{% endblock %}
-    {% if not is_login_page %}
+    {% if not is_auth_page %}
       </div>
     {% endif %}
   </div>

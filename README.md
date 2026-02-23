@@ -98,3 +98,12 @@ You can tune limits with:
 - `INVENTORY_IMPORT_MAX_FILE_MB`
 - `INVENTORY_IMPORT_MAX_ROWS`
 - `INVENTORY_IMPORT_CHUNK_SIZE`
+
+## 6) Self-service signup and login
+
+- New subscriber companies can create their own tenant account at:
+  - `/auth/register` (also available at `/auth/signup`)
+- Signup creates:
+  - a new `Company` (tenant)
+  - the first `User` in that company with role `admin`
+- Returning users simply log in via `/auth/login`.
