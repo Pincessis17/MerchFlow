@@ -37,7 +37,7 @@
       type="date"
       id="expiry_date"
       name="expiry_date"
-      value="{% if product.expiry_date %}{{ product.expiry_date.strftime('%Y-%m-%d') }}{% endif %}">
+      value="{{ product.expiry_date or '' }}">
   </div>
   <br>
 
