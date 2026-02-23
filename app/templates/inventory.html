@@ -4,114 +4,112 @@
 
 {% block content %}
 <h2>Inventory</h2>
+<p class="muted">Manage stock levels, cost price, and selling price in one place.</p>
 
-<h3>Current Products</h3>
+<div class="grid2">
+  <div class="card" style="margin-top:0;">
+    <h3>Add New Product</h3>
+    <form method="POST">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-{# Low stock alert box #}
-{% if low_stock %}
-  <div style="border: 1px solid #f97316; background: #fff7ed; padding: 10px; margin-bottom: 16px;">
-    <strong>Low stock alert</strong> – these items have quantity ≤ {{ low_stock_threshold }}:
+      <div>
+        <label for="name">Product Name</label><br>
+        <input type="text" id="name" name="name" required>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label for="quantity">Quantity</label><br>
+          <input type="number" id="quantity" name="quantity" min="0">
+        </div>
+        <div>
+          <label for="unit">Unit (e.g. BTL, TAB, PK)</label><br>
+          <input type="text" id="unit" name="unit">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label for="category">Category</label><br>
+          <input type="text" id="category" name="category">
+        </div>
+        <div>
+          <label for="expiry_date">Expiry Date</label><br>
+          <input type="date" id="expiry_date" name="expiry_date">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label for="buying_price">Cost Price</label><br>
+          <input type="number" step="0.01" id="buying_price" name="buying_price" min="0">
+        </div>
+        <div>
+          <label for="price">Selling Price</label><br>
+          <input type="number" step="0.01" id="price" name="price" min="0">
+        </div>
+      </div>
+
+      <button type="submit">Add Product</button>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:0;">
+    <h3>Inventory Tips</h3>
     <ul>
-      {% for p in low_stock %}
-        <li>{{ p.name }} — {{ p.quantity }} {{ p.unit or "" }}</li>
-      {% endfor %}
+      <li>Keep cost price updated after each purchase for accurate profit.</li>
+      <li>Use expiry date where relevant for safer stock handling.</li>
+      <li>Set quantity to zero for out-of-stock products instead of deleting immediately.</li>
     </ul>
   </div>
-{% endif %}
+</div>
 
-{% if products %}
-  <table border="1" cellpadding="5">
-    <tr>
-      <th>#</th>
-      <th>Product Name</th>
-      <th>Quantity</th>
-      <th>Unit</th>
-      <th>Category</th>
-      <th>Expiry Date</th>
-      <th>Cost Price</th>
-      <th>Selling Price</th>
-      <th>Actions</th>
-    </tr>
-    {% for p in products %}
-    <tr>
-      <td>{{ loop.index }}</td>
-      <td>{{ p.name }}</td>
-      <td>{{ p.quantity }}</td>
-      <td>{{ p.unit or "" }}</td>
-      <td>{{ p.category or "" }}</td>
-      <td>{{ p.expiry_date or "-" }}</td>
-      <td>{{ "%.2f" | format(p.buying_price or 0) }}</td>
-      <td>{{ "%.2f" | format(p.price or 0) }}</td>
-      <td>
-        <a href="{{ url_for('inventory.edit_product', product_id=p.id) }}">Edit</a> |
-        <form
-          method="POST"
-          action="{{ url_for('inventory.delete_product', product_id=p.id) }}"
-          style="display:inline;"
-        >
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <button
-            type="submit"
-            style="padding:0; border:none; background:none; color:inherit; text-decoration:underline; cursor:pointer;"
+<div class="card">
+  <h3>Current Products</h3>
+  {% if products %}
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Product Name</th>
+        <th>Quantity</th>
+        <th>Unit</th>
+        <th>Category</th>
+        <th>Expiry Date</th>
+        <th>Cost Price</th>
+        <th>Selling Price</th>
+        <th>Actions</th>
+      </tr>
+      {% for p in products %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.quantity }}</td>
+        <td>{{ p.unit or "" }}</td>
+        <td>{{ p.category or "" }}</td>
+        <td>{{ p.expiry_date or "-" }}</td>
+        <td>{{ "%.2f" | format(p.buying_price or 0) }}</td>
+        <td>{{ "%.2f" | format(p.price or 0) }}</td>
+        <td>
+          <a href="{{ url_for('inventory.edit_product', product_id=p.id) }}">Edit</a>
+          <form
+            method="POST"
+            action="{{ url_for('inventory.delete_product', product_id=p.id) }}"
+            style="display:inline; margin-left: 8px;"
           >
-            Delete
-          </button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-{% else %}
-  <p>No products yet. Add one below.</p>
-{% endif %}
-
-<hr>
-
-<h3>Add New Product</h3>
-<form method="POST">
-  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-  <div>
-    <label for="name">Product Name</label><br>
-    <input type="text" id="name" name="name" required>
-  </div>
-  <br>
-
-  <div>
-    <label for="quantity">Quantity</label><br>
-    <input type="number" id="quantity" name="quantity" min="0">
-  </div>
-  <br>
-
-  <div>
-    <label for="unit">Unit (e.g. BTL, TAB, PK)</label><br>
-    <input type="text" id="unit" name="unit">
-  </div>
-  <br>
-
-  <div>
-    <label for="category">Category (e.g. Syrup, Antibiotic)</label><br>
-    <input type="text" id="category" name="category">
-  </div>
-  <br>
-
-  <div>
-    <label for="expiry_date">Expiry Date</label><br>
-    <input type="date" id="expiry_date" name="expiry_date">
-  </div>
-  <br>
-
-  <div>
-    <label for="buying_price">Cost Price</label><br>
-    <input type="number" step="0.01" id="buying_price" name="buying_price" min="0">
-  </div>
-  <br>
-
-  <div>
-    <label for="price">Selling Price</label><br>
-    <input type="number" step="0.01" id="price" name="price" min="0">
-  </div>
-  <br>
-
-  <button type="submit">Add Product</button>
-</form>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button
+              type="submit"
+              style="padding:4px 8px; border:1px solid rgba(255,107,107,.6); border-radius:8px; background:rgba(255,107,107,.15); color:inherit; cursor:pointer;"
+            >
+              Delete
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No products yet. Add one using the form above.</p>
+  {% endif %}
+</div>
 {% endblock %}

@@ -4,78 +4,92 @@
 
 {% block content %}
 <h2>Sales</h2>
+<p class="muted">Record sales quickly and monitor today’s performance.</p>
 
-<h3>Record New Sale</h3>
+<div class="grid2">
+  <div class="card" style="margin-top:0;">
+    <h3>Record New Sale</h3>
+    <form method="POST">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-<form method="POST">
-  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-  <div>
-    <label for="product_id">Product</label><br>
-    <select id="product_id" name="product_id">
-      <option value="">-- Select product --</option>
-      {% for p in products %}
-        <option value="{{ p.id }}">{{ p.name }}</option>
+      <div>
+        <label for="product_id">Product</label><br>
+        <select id="product_id" name="product_id" required>
+          <option value="">-- Select product --</option>
+          {% for p in products %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="quantity">Quantity</label><br>
+        <input type="number" id="quantity" name="quantity" min="1" required>
+      </div>
+
+      <button type="submit">Record Sale</button>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:0;">
+    <h3>Today's Summary</h3>
+    <table>
+      <tr>
+        <th>Total sales entries</th>
+        <td><strong>{{ today_sales_count }}</strong></td>
+      </tr>
+      <tr>
+        <th>Items sold</th>
+        <td><strong>{{ today_items_sold }}</strong></td>
+      </tr>
+      <tr>
+        <th>Total amount</th>
+        <td><strong>{{ "%.2f"|format(today_total_amount) }}</strong></td>
+      </tr>
+      <tr>
+        <th>Total profit</th>
+        <td><strong>{{ "%.2f"|format(today_total_profit or 0) }}</strong></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Recent Sales</h3>
+  {% if recent_sales %}
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Date/Time</th>
+        <th>Product</th>
+        <th>Qty</th>
+        <th>Cost Price</th>
+        <th>Unit Price</th>
+        <th>Total</th>
+        <th>Profit</th>
+      </tr>
+      {% for s in recent_sales %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+          {% if s.created_at %}
+            {{ s.created_at.strftime('%Y-%m-%d %H:%M') }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>{{ s.product.name if s.product else "Unknown" }}</td>
+        <td>{{ s.quantity }}</td>
+        <td>{{ "%.2f"|format(s.buying_price or 0) }}</td>
+        <td>{{ "%.2f"|format(s.unit_price or 0) }}</td>
+        <td>{{ "%.2f"|format(s.line_total or 0) }}</td>
+        <td>{{ "%.2f"|format(s.line_profit or 0) }}</td>
+      </tr>
       {% endfor %}
-    </select>
-  </div>
-  <br>
-
-  <div>
-    <label for="quantity">Quantity</label><br>
-    <input type="number" id="quantity" name="quantity" min="1" required>
-  </div>
-  <br>
-
-  <button type="submit">Record Sale</button>
-</form>
-
-<hr>
-
-<h3>Today's Summary</h3>
-<ul>
-  <li>Total number of sales today: <strong>{{ today_sales_count }}</strong></li>
-  <li>Total items sold today: <strong>{{ today_items_sold }}</strong></li>
-  <li>Total amount today: <strong>{{ "%.2f"|format(today_total_amount) }}</strong></li>
-  <li>Total profit today: <strong>{{ "%.2f"|format(today_total_profit or 0) }}</strong></li>
-</ul>
-
-<hr>
-
-<h3>Recent Sales</h3>
-
-{% if recent_sales %}
-  <table border="1" cellpadding="5">
-    <tr>
-      <th>#</th>
-      <th>Date/Time</th>
-      <th>Product</th>
-      <th>Qty</th>
-      <th>Cost Price</th>
-      <th>Unit Price</th>
-      <th>Total</th>
-      <th>Profit</th>
-    </tr>
-    {% for s in recent_sales %}
-    <tr>
-      <td>{{ loop.index }}</td>
-      <td>
-        {% if s.created_at %}
-          {{ s.created_at.strftime('%Y-%m-%d %H:%M') }}
-        {% else %}
-          -
-        {% endif %}
-      </td>
-      <td>{{ s.product.name if s.product else "Unknown" }}</td>
-      <td>{{ s.quantity }}</td>
-      <td>{{ "%.2f"|format(s.buying_price or 0) }}</td>
-      <td>{{ "%.2f"|format(s.unit_price or 0) }}</td>
-      <td>{{ "%.2f"|format(s.line_total or 0) }}</td>
-      <td>{{ "%.2f"|format(s.line_profit or 0) }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-{% else %}
-  <p>No sales yet.</p>
-{% endif %}
+    </table>
+  {% else %}
+    <p>No sales yet.</p>
+  {% endif %}
+</div>
 
 {% endblock %}

@@ -10,7 +10,10 @@
   <div class="grid2">
     <div>
       <h3>Invoice Info</h3>
-      <p><strong>Status:</strong> {{ invoice.status }}</p>
+      <p>
+        <strong>Status:</strong>
+        <span class="status-pill {{ invoice.status }}">{{ invoice.status|upper }}</span>
+      </p>
       <p><strong>Customer:</strong> {{ invoice.customer_name }}</p>
       <p><strong>Email:</strong> {{ invoice.customer_email or "-" }}</p>
       <p><strong>Issue Date:</strong> {{ invoice.issue_date.strftime('%Y-%m-%d') }}</p>

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
   <h2>Invoices</h2>
+  <p class="sub">Track invoice lifecycle from draft to paid with quick actions.</p>
   <p>
     <a class="btn" href="{{ url_for('invoices.create_invoice') }}">+ Create Invoice</a>
     <a class="btn" href="{{ url_for('invoices.invoice_settings') }}">Invoice Settings</a>
@@ -45,7 +46,9 @@
           <td>{{ loop.index }}</td>
           <td>{{ inv.invoice_number }}</td>
           <td>{{ inv.customer_name }}</td>
-          <td>{{ inv.status }}</td>
+          <td>
+            <span class="status-pill {{ inv.status }}">{{ inv.status|upper }}</span>
+          </td>
           <td>{{ "%.2f"|format(inv.total_amount or 0) }} {{ inv.currency }}</td>
           <td>{{ inv.issue_date.strftime('%Y-%m-%d') }}</td>
           <td>
