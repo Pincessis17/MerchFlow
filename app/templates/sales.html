@@ -50,6 +50,7 @@
       <th>Date/Time</th>
       <th>Product</th>
       <th>Qty</th>
+      <th>Cost Price</th>
       <th>Unit Price</th>
       <th>Total</th>
       <th>Profit</th>
@@ -66,6 +67,7 @@
       </td>
       <td>{{ s.product.name if s.product else "Unknown" }}</td>
       <td>{{ s.quantity }}</td>
+      <td>{{ "%.2f"|format(s.buying_price or 0) }}</td>
       <td>{{ "%.2f"|format(s.unit_price or 0) }}</td>
       <td>{{ "%.2f"|format(s.line_total or 0) }}</td>
       <td>{{ "%.2f"|format(s.line_profit or 0) }}</td>

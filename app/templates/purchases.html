@@ -46,7 +46,7 @@
 
   <div>
     <label>Buying price (per unit)</label><br>
-    <input type="number" step="0.01" name="buying_price" min="0" required>
+    <input type="number" step="0.01" name="unit_cost" min="0" required>
   </div>
 
   <button type="submit" {% if not suppliers %}disabled{% endif %}>
@@ -75,7 +75,7 @@
         <td>{{ pu.supplier.name }}</td>
         <td>{{ pu.product.name }}</td>
         <td>{{ pu.quantity }}</td>
-        <td>{{ "%.2f"|format(pu.buying_price) }}</td>
+        <td>{{ "%.2f"|format(pu.unit_cost) }}</td>
         <td>{{ "%.2f"|format(pu.line_total) }}</td>
       </tr>
     {% endfor %}

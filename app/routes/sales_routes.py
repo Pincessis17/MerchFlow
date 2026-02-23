@@ -69,13 +69,13 @@ def sales_home():
             return redirect(url_for("sales.sales_home"))
 
         # Selling price (from Product)
-        unit_price = float(product.price or 0.0)
+        unit_price = round(float(product.price or 0.0), 2)
 
         # Cost price (from Product)
-        buying_price = float(product.buying_price or 0.0)
+        buying_price = round(float(product.buying_price or 0.0), 2)
 
-        line_total = unit_price * quantity
-        line_profit = (unit_price - buying_price) * quantity
+        line_total = round(unit_price * quantity, 2)
+        line_profit = round((unit_price - buying_price) * quantity, 2)
 
         # Create Sale
         sale = Sale(

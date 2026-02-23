@@ -42,6 +42,19 @@
   <br>
 
   <div>
+    <label for="buying_price">Cost Price</label><br>
+    <input
+      type="number"
+      step="0.01"
+      id="buying_price"
+      name="buying_price"
+      min="0"
+      value="{{ product.buying_price }}"
+    >
+  </div>
+  <br>
+
+  <div>
     <label for="price">Price</label><br>
     <input type="number" step="0.01" id="price" name="price" min="0" value="{{ product.price }}">
   </div>

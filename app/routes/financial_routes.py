@@ -325,7 +325,7 @@ def purchases():
             flash("Please provide valid numeric values for quantity and unit cost.", "error")
             return redirect(url_for("financial.purchases"))
 
-        if not supplier_id or not product_id or quantity <= 0:
+        if not supplier_id or not product_id or quantity <= 0 or unit_cost < 0:
             flash("Please select supplier, product and enter valid quantity.", "error")
             return redirect(url_for("financial.purchases"))
 
@@ -339,7 +339,7 @@ def purchases():
             company_id=company_id
         ).first_or_404()
 
-        line_total = unit_cost * quantity
+        line_total = round(unit_cost * quantity, 2)
 
         purchase = Purchase(
             company_id=company_id,
@@ -350,7 +350,18 @@ def purchases():
             line_total=line_total,
         )
 
-        product.quantity += quantity
+        previous_stock = int(product.quantity or 0)
+        previous_cost = float(product.buying_price or 0.0)
+        updated_stock = previous_stock + quantity
+
+        # Keep a moving average cost so new sales use a realistic COGS basis.
+        if updated_stock > 0:
+            weighted_cost = (
+                (previous_stock * previous_cost) + (quantity * unit_cost)
+            ) / updated_stock
+            product.buying_price = round(weighted_cost, 4)
+
+        product.quantity = updated_stock
 
         db.session.add(purchase)
         db.session.commit()

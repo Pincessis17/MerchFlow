@@ -29,6 +29,18 @@ def _generate_code_from_name(name: str, company_id: int) -> str:
     return code
 
 
+def _parse_non_negative_float(raw_value, field_label: str) -> float:
+    try:
+        value = float(raw_value or 0)
+    except ValueError as exc:
+        raise ValueError(f"{field_label} must be a valid number.") from exc
+
+    if value < 0:
+        raise ValueError(f"{field_label} cannot be negative.")
+
+    return value
+
+
 @inventory_bp.route("/", methods=["GET", "POST"])
 @login_required
 def inventory_home():
@@ -52,9 +64,14 @@ def inventory_home():
         expiry_raw = (request.form.get("expiry_date") or "").strip()
 
         try:
-            price = float(request.form.get("price") or 0)
+            price = _parse_non_negative_float(request.form.get("price"), "Selling price")
+            buying_price = _parse_non_negative_float(
+                request.form.get("buying_price"),
+                "Cost price",
+            )
         except ValueError:
-            price = 0.0
+            flash("Please provide valid non-negative prices.", "error")
+            return redirect(url_for("inventory.inventory_home"))
 
         expiry_date = expiry_raw or None  # stored as plain string in the DB
 
@@ -73,6 +90,7 @@ def inventory_home():
             unit=unit,
             category=category,
             expiry_date=expiry_date,
+            buying_price=buying_price,
             price=price,
         )
 
@@ -121,9 +139,14 @@ def edit_product(product_id):
         product.expiry_date = expiry_raw or None
 
         try:
-            product.price = float(request.form.get("price") or 0)
+            product.price = _parse_non_negative_float(request.form.get("price"), "Selling price")
+            product.buying_price = _parse_non_negative_float(
+                request.form.get("buying_price"),
+                "Cost price",
+            )
         except ValueError:
-            product.price = 0.0
+            flash("Please provide valid non-negative prices.", "error")
+            return redirect(url_for("inventory.edit_product", product_id=product.id))
 
         db.session.commit()
         flash("Product updated.", "success")
