@@ -200,6 +200,10 @@
           <a href="{{ url_for('reports.reports_home') }}" class="{% if request.blueprint == 'reports' %}active{% endif %}">Reports</a>
           <a href="{{ url_for('invoices.list_invoices') }}" class="{% if request.blueprint == 'invoices' %}active{% endif %}">Invoices</a>
 
+          {% if role == 'admin' or session.get('user', {}).get('is_platform_admin') %}
+            <a href="{{ url_for('admin.team_management') }}" class="{% if request.endpoint in ['admin.team_management'] %}active{% endif %}">Team</a>
+          {% endif %}
+
           {% if role in ['admin', 'accountant'] %}
             <a href="{{ url_for('financial.financial_home') }}" class="{% if request.blueprint == 'financial' %}active{% endif %}">Financial</a>
           {% endif %}

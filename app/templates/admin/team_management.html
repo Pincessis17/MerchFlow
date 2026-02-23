@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+{% set title = "Team Management" %}
+
+{% block content %}
+  <h2>Team Management</h2>
+  <p class="muted">
+    Create additional logins for your company. Each user signs in with their own email and password.
+  </p>
+
+  <div class="grid2">
+    <div class="card" style="margin-top:0;">
+      <h3>Add Staff Account</h3>
+      <form method="post" action="{{ url_for('admin.create_team_user') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+        <div>
+          <label for="name">Full Name</label><br>
+          <input id="name" name="name" type="text" required>
+        </div>
+
+        <div>
+          <label for="email">Email Address</label><br>
+          <input id="email" name="email" type="email" required>
+        </div>
+
+        <div>
+          <label for="role">Role</label><br>
+          <select id="role" name="role">
+            {% for role_name in tenant_roles %}
+              <option value="{{ role_name }}" {% if role_name == 'staff' %}selected{% endif %}>
+                {{ role_name|capitalize }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label for="password">Temporary Password</label><br>
+            <input id="password" name="password" type="password" minlength="8" required>
+          </div>
+          <div>
+            <label for="confirm_password">Confirm Password</label><br>
+            <input id="confirm_password" name="confirm_password" type="password" minlength="8" required>
+          </div>
+        </div>
+
+        <button type="submit">Create User</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top:0;">
+      <h3>How it works</h3>
+      <ul>
+        <li>Each staff member gets a separate login.</li>
+        <li>They can sign in from the normal Login page.</li>
+        <li>Use roles to control what they can access.</li>
+      </ul>
+      <p class="muted" style="margin-top:10px;">
+        Tip: Ask the new user to change their password after first sign-in.
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Company Users</h3>
+    {% if users %}
+      <table>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Created</th>
+        </tr>
+        {% for u in users %}
+          <tr>
+            <td>{{ u.name }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ (u.role or 'staff')|capitalize }}</td>
+            <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>No users yet.</p>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -107,3 +107,6 @@ You can tune limits with:
   - a new `Company` (tenant)
   - the first `User` in that company with role `admin`
 - Returning users simply log in via `/auth/login`.
+- Company admins can add more staff accounts from:
+  - `/admin/team`
+  - Each staff member gets their own login and role.

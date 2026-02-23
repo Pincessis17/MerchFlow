@@ -32,6 +32,8 @@
 
         <!-- Navigation -->
         <div class="navlinks">
+          {% set nav_user = session.get('user', {}) %}
+          {% set nav_role = (nav_user.get('role') or '').lower() %}
 
           <a href="{{ url_for('home') }}"
              class="{% if request.endpoint == 'home' %}active{% endif %}">
@@ -57,6 +59,13 @@
              class="{% if request.blueprint == 'invoices' %}active{% endif %}">
              Invoices
           </a>
+
+          {% if nav_role == 'admin' or nav_user.get('is_platform_admin') %}
+            <a href="{{ url_for('admin.team_management') }}"
+               class="{% if request.endpoint == 'admin.team_management' %}active{% endif %}">
+               Team
+            </a>
+          {% endif %}
 
           <!-- Financial (Feature Controlled) -->
           {% set can_access_financial = has_feature_access('financial') %}
