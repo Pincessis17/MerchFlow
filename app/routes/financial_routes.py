@@ -5,7 +5,6 @@ import io
 
 from flask import (
     Blueprint,
-    current_app,
     render_template,
     request,
     redirect,
@@ -35,11 +34,6 @@ financial_bp = Blueprint("financial", __name__, url_prefix="/financial")
 # =====================================================
 # Permission Helper (Company Scoped)
 # =====================================================
-def _is_platform_admin(email: str) -> bool:
-    configured = current_app.config.get("PLATFORM_ADMIN_EMAILS") or set()
-    return str(email or "").strip().lower() in configured
-
-
 def _safe_parse_date(raw_value: str, fallback: date) -> date:
     try:
         return datetime.strptime((raw_value or "").strip(), "%Y-%m-%d").date()
@@ -52,8 +46,8 @@ def has_financial_access():
     if not user:
         return False
 
-    # Platform owner bypass
-    if _is_platform_admin(user.get("email")):
+    role = str(user.get("role") or "").strip().lower()
+    if role == "admin":
         return True
 
     access = FeatureAccess.query.filter_by(

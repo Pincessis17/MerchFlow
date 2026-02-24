@@ -110,3 +110,27 @@ You can tune limits with:
 - Company admins can add more staff accounts from:
   - `/admin/team`
   - Each staff member gets their own login and role.
+
+## 7) Finance permissions, account management, and invoice/sales linkage
+
+- **Finance access policy**
+  - Company `admin` always has finance access.
+  - Other users require explicit finance grant by company admin.
+  - Finance grants are managed from `/admin/team`.
+
+- **Team management**
+  - Company admins can:
+    - create staff accounts
+    - grant/revoke finance access
+    - delete user accounts (with safeguards)
+
+- **Invoice improvements**
+  - Invoices can be searched by:
+    - customer/invoice text (`name`, `email`, `invoice number`)
+    - `issue_date`
+  - Payment method is captured on invoices.
+  - Line items support dynamic add/remove in create form.
+  - Sales can be linked to invoices via "Create Invoice" from the sales table.
+
+- **Product search**
+  - Sales and Inventory pages support product search by name/code/category.

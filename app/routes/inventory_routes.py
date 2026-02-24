@@ -2,6 +2,7 @@
 import csv
 import io
 
+from sqlalchemy import or_
 from flask import (
     Blueprint,
     current_app,
@@ -200,17 +201,24 @@ def inventory_home():
         return redirect(url_for("inventory.inventory_home"))
 
     # ----- Show current inventory -----
-    products = (
-        Product.query
-        .filter_by(company_id=company_id)
-        .order_by(Product.name)
-        .all()
-    )
+    search_query = (request.args.get("q") or "").strip()
+    products_query = Product.query.filter_by(company_id=company_id)
+    if search_query:
+        like_value = f"%{search_query}%"
+        products_query = products_query.filter(
+            or_(
+                Product.name.ilike(like_value),
+                Product.code.ilike(like_value),
+                Product.category.ilike(like_value),
+            )
+        )
+    products = products_query.order_by(Product.name.asc()).all()
 
     # ✅ No low stock section here anymore
     return render_template(
         "inventory.html",
         products=products,
+        search_query=search_query,
     )
 
 

@@ -29,6 +29,10 @@
     <div class="right">
       <h1>{{ invoice.invoice_number }}</h1>
       <div>Status: {{ invoice.status|upper }}</div>
+      <div>Payment: {{ (invoice.payment_method or 'pending').replace('_', ' ')|title }}</div>
+      {% if invoice.sale_id %}
+        <div>Linked Sale: #{{ invoice.sale_id }}</div>
+      {% endif %}
     </div>
   </div>
 

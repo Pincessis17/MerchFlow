@@ -18,6 +18,14 @@
       <p><strong>Email:</strong> {{ invoice.customer_email or "-" }}</p>
       <p><strong>Issue Date:</strong> {{ invoice.issue_date.strftime('%Y-%m-%d') }}</p>
       <p><strong>Due Date:</strong> {{ invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else '-' }}</p>
+      <p><strong>Payment Method:</strong> {{ (invoice.payment_method or 'pending').replace('_', ' ')|title }}</p>
+      <p><strong>Linked Sale:</strong>
+        {% if invoice.sale_id %}
+          Sale #{{ invoice.sale_id }}
+        {% else %}
+          -
+        {% endif %}
+      </p>
       <p><strong>Address:</strong> {{ invoice.billing_address or "-" }}</p>
       <p><strong>Notes:</strong> {{ invoice.notes or "-" }}</p>
     </div>
@@ -30,6 +38,14 @@
       {% if invoice.status != 'paid' %}
         <form method="post" action="{{ url_for('invoices.mark_invoice_paid', invoice_id=invoice.id) }}">
           <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <label for="payment_method"><strong>Payment Method</strong></label>
+          <select id="payment_method" name="payment_method" required>
+            {% for method_value, method_label in payment_method_choices %}
+              <option value="{{ method_value }}" {% if (invoice.payment_method or 'pending') == method_value %}selected{% endif %}>
+                {{ method_label }}
+              </option>
+            {% endfor %}
+          </select>
           <button type="submit">Mark as Paid</button>
         </form>
       {% else %}

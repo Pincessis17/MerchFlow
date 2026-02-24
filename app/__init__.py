@@ -83,8 +83,10 @@ def create_app():
     # JINJA GLOBALS
     # ==================================================
     from .utils.permissions import has_feature_access
+    from .utils.platform_security import is_platform_owner
     app.jinja_env.globals["has_feature_access"] = has_feature_access
     app.jinja_env.globals["csrf_token"] = generate_csrf_token
+    app.jinja_env.globals["is_platform_owner"] = is_platform_owner
 
     # ==================================================
     # LOAD COMPANY CONTEXT (Multi-Tenant Middleware)

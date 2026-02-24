@@ -1,6 +1,6 @@
 # app/routes/admin_routes.py
 
-from flask import Blueprint, current_app, render_template, redirect, url_for, flash, request, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from .. import db
 from ..models import User, FeatureAccess
 from ..utils.auth import login_required
@@ -10,20 +10,10 @@ ALLOWED_FEATURES = {"financial"}
 TENANT_TEAM_ROLES = {"admin", "manager", "staff", "accountant"}
 
 
-# ------------------------------------------------
-# Super Admin (Platform Owner)
-# ------------------------------------------------
-def super_admin_required():
-    user = session.get("user") or {}
-    email = str(user.get("email") or "").strip().lower()
-    admin_emails = current_app.config.get("PLATFORM_ADMIN_EMAILS") or set()
-    return email in admin_emails
-
-
 def can_manage_team():
     user = session.get("user") or {}
     role = str(user.get("role") or "").strip().lower()
-    return bool(user) and (role == "admin" or bool(user.get("is_platform_admin")))
+    return bool(user) and bool(user.get("company_id")) and role == "admin"
 
 
 # ------------------------------------------------
@@ -32,9 +22,8 @@ def can_manage_team():
 @admin_bp.route("/")
 @login_required
 def admin_home():
-
-    if not super_admin_required():
-        flash("You are not allowed to access Admin Panel.", "error")
+    if not can_manage_team():
+        flash("Only company admins can access this page.", "error")
         return redirect(url_for("home"))
 
     user = session.get("user")
@@ -67,9 +56,8 @@ def admin_home():
 @admin_bp.route("/grant", methods=["POST"])
 @login_required
 def grant_access():
-
-    if not super_admin_required():
-        flash("Unauthorized.", "error")
+    if not can_manage_team():
+        flash("Only company admins can manage finance access.", "error")
         return redirect(url_for("home"))
 
     user = session.get("user")
@@ -115,9 +103,8 @@ def grant_access():
 @admin_bp.route("/revoke", methods=["POST"])
 @login_required
 def revoke_access():
-
-    if not super_admin_required():
-        flash("Unauthorized.", "error")
+    if not can_manage_team():
+        flash("Only company admins can manage finance access.", "error")
         return redirect(url_for("home"))
 
     user = session.get("user")
@@ -165,7 +152,20 @@ def team_management():
         .order_by(User.created_at.desc())
         .all()
     )
-    return render_template("admin/team_management.html", users=users, tenant_roles=sorted(TENANT_TEAM_ROLES))
+    finance_access_emails = {
+        item.email
+        for item in FeatureAccess.query.filter_by(
+            company_id=company_id,
+            feature="financial",
+            is_enabled=True,
+        ).all()
+    }
+    return render_template(
+        "admin/team_management.html",
+        users=users,
+        tenant_roles=sorted(TENANT_TEAM_ROLES),
+        finance_access_emails=finance_access_emails,
+    )
 
 
 @admin_bp.route("/team/create", methods=["POST"])
@@ -225,4 +225,38 @@ def create_team_user():
         return redirect(url_for("admin.team_management"))
 
     flash(f"User account created for {email}.", "success")
+    return redirect(url_for("admin.team_management"))
+
+
+@admin_bp.route("/team/delete/<int:user_id>", methods=["POST"])
+@login_required
+def delete_team_user(user_id):
+    if not can_manage_team():
+        flash("Only company admins can manage staff accounts.", "error")
+        return redirect(url_for("home"))
+
+    actor = session.get("user") or {}
+    company_id = actor.get("company_id")
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
+    target = User.query.filter_by(id=user_id, company_id=company_id).first_or_404()
+    if target.id == actor.get("id"):
+        flash("You cannot delete your own account while logged in.", "error")
+        return redirect(url_for("admin.team_management"))
+
+    if (target.role or "").strip().lower() == "admin":
+        admin_count = User.query.filter_by(company_id=company_id, role="admin").count()
+        if admin_count <= 1:
+            flash("You cannot delete the last admin account.", "error")
+            return redirect(url_for("admin.team_management"))
+
+    FeatureAccess.query.filter_by(
+        company_id=company_id,
+        email=target.email,
+    ).delete(synchronize_session=False)
+    db.session.delete(target)
+    db.session.commit()
+    flash("User account deleted.", "info")
     return redirect(url_for("admin.team_management"))

@@ -70,14 +70,56 @@
           <th>Name</th>
           <th>Email</th>
           <th>Role</th>
+          <th>Finance Access</th>
           <th>Created</th>
+          <th>Actions</th>
         </tr>
         {% for u in users %}
           <tr>
             <td>{{ u.name }}</td>
             <td>{{ u.email }}</td>
             <td>{{ (u.role or 'staff')|capitalize }}</td>
+            <td>
+              {% if (u.role or '').lower() == 'admin' %}
+                Admin (always)
+              {% elif u.email in finance_access_emails %}
+                Granted
+              {% else %}
+                Not granted
+              {% endif %}
+            </td>
             <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+              {% if (u.role or '').lower() != 'admin' %}
+                {% if u.email in finance_access_emails %}
+                  <form method="post" action="{{ url_for('admin.revoke_access') }}" style="display:inline;">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="email" value="{{ u.email }}">
+                    <input type="hidden" name="feature" value="financial">
+                    <button type="submit" style="padding:6px 10px;">Revoke Finance</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="{{ url_for('admin.grant_access') }}" style="display:inline;">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="email" value="{{ u.email }}">
+                    <input type="hidden" name="feature" value="financial">
+                    <button type="submit" style="padding:6px 10px;">Grant Finance</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+
+              {% if u.id != session.get('user', {}).get('id') %}
+                <form method="post" action="{{ url_for('admin.delete_team_user', user_id=u.id) }}" style="display:inline;">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button
+                    type="submit"
+                    style="padding:6px 10px; border:1px solid rgba(255,107,107,.6); border-radius:8px; background:rgba(255,107,107,.15); color:inherit; cursor:pointer;"
+                  >
+                    Delete Account
+                  </button>
+                </form>
+              {% endif %}
+            </td>
           </tr>
         {% endfor %}
       </table>

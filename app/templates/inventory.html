@@ -96,10 +96,27 @@
 
 <div class="card">
   <h3>Current Products</h3>
+  <form method="get" style="display:grid; gap:10px; margin-bottom:10px;">
+    <div>
+      <label for="q">Search products in inventory</label><br>
+      <input
+        id="q"
+        name="q"
+        value="{{ search_query or '' }}"
+        placeholder="Search by product name, code, or category"
+      >
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button type="submit">Search</button>
+      <a class="btn" href="{{ url_for('inventory.inventory_home') }}">Clear</a>
+    </div>
+  </form>
+
   {% if products %}
     <table>
       <tr>
         <th>#</th>
+        <th>Code</th>
         <th>Product Name</th>
         <th>Quantity</th>
         <th>Unit</th>
@@ -112,6 +129,7 @@
       {% for p in products %}
       <tr>
         <td>{{ loop.index }}</td>
+        <td>{{ p.code }}</td>
         <td>{{ p.name }}</td>
         <td>{{ p.quantity }}</td>
         <td>{{ p.unit or "" }}</td>

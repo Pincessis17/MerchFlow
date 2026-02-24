@@ -60,7 +60,7 @@
              Invoices
           </a>
 
-          {% if nav_role == 'admin' or nav_user.get('is_platform_admin') %}
+          {% if nav_role == 'admin' %}
             <a href="{{ url_for('admin.team_management') }}"
                class="{% if request.endpoint == 'admin.team_management' %}active{% endif %}">
                Team
@@ -80,8 +80,8 @@
           </a>
 
           <!-- Admin (Only Platform Owner) -->
-          {% if session.get('user', {}).get('is_platform_admin') %}
-            <a href="{{ url_for('platform.dashboard') }}"
+          {% if is_platform_owner() %}
+            <a href="{{ url_for('platform.elevate_access', next=url_for('platform.dashboard')) }}"
                class="{% if request.blueprint == 'platform' %}active{% endif %}">
                Platform
             </a>

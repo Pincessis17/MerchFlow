@@ -194,22 +194,23 @@
         </div>
 
         <nav>
+          {% set can_access_financial = has_feature_access('financial') %}
           <a href="{{ url_for('home') }}" class="{% if request.endpoint == 'home' %}active{% endif %}">Home</a>
           <a href="{{ url_for('sales.sales_home') }}" class="{% if request.blueprint == 'sales' %}active{% endif %}">Sales</a>
           <a href="{{ url_for('inventory.inventory_home') }}" class="{% if request.blueprint == 'inventory' %}active{% endif %}">Inventory</a>
           <a href="{{ url_for('reports.reports_home') }}" class="{% if request.blueprint == 'reports' %}active{% endif %}">Reports</a>
           <a href="{{ url_for('invoices.list_invoices') }}" class="{% if request.blueprint == 'invoices' %}active{% endif %}">Invoices</a>
 
-          {% if role == 'admin' or session.get('user', {}).get('is_platform_admin') %}
+          {% if role == 'admin' %}
             <a href="{{ url_for('admin.team_management') }}" class="{% if request.endpoint in ['admin.team_management'] %}active{% endif %}">Team</a>
           {% endif %}
 
-          {% if role in ['admin', 'accountant'] %}
+          {% if can_access_financial %}
             <a href="{{ url_for('financial.financial_home') }}" class="{% if request.blueprint == 'financial' %}active{% endif %}">Financial</a>
           {% endif %}
 
-          {% if session.get('user', {}).get('is_platform_admin') %}
-            <a href="{{ url_for('platform.dashboard') }}" class="{% if request.blueprint == 'platform' %}active{% endif %}">Platform</a>
+          {% if is_platform_owner() %}
+            <a href="{{ url_for('platform.elevate_access', next=url_for('platform.dashboard')) }}" class="{% if request.blueprint == 'platform' %}active{% endif %}">Platform</a>
           {% endif %}
         </nav>
 

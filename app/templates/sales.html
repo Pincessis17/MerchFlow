@@ -6,6 +6,24 @@
 <h2>Sales</h2>
 <p class="muted">Record sales quickly and monitor today’s performance.</p>
 
+<div class="card" style="margin-top:0; margin-bottom:14px;">
+  <form method="get" style="display:grid; gap:10px;">
+    <div>
+      <label for="q">Search products in sales and product picker</label><br>
+      <input
+        id="q"
+        name="q"
+        value="{{ search_query or '' }}"
+        placeholder="Search by product name, code, or category"
+      >
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button type="submit">Search</button>
+      <a class="btn" href="{{ url_for('sales.sales_home') }}">Clear</a>
+    </div>
+  </form>
+</div>
+
 <div class="grid2">
   <div class="card" style="margin-top:0;">
     <h3>Record New Sale</h3>
@@ -17,7 +35,7 @@
         <select id="product_id" name="product_id" required>
           <option value="">-- Select product --</option>
           {% for p in products %}
-            <option value="{{ p.id }}">{{ p.name }}</option>
+            <option value="{{ p.id }}">{{ p.name }}{% if p.code %} ({{ p.code }}){% endif %}</option>
           {% endfor %}
         </select>
       </div>
@@ -67,6 +85,7 @@
         <th>Unit Price</th>
         <th>Total</th>
         <th>Profit</th>
+        <th>Invoice</th>
       </tr>
       {% for s in recent_sales %}
       <tr>
@@ -84,6 +103,17 @@
         <td>{{ "%.2f"|format(s.unit_price or 0) }}</td>
         <td>{{ "%.2f"|format(s.line_total or 0) }}</td>
         <td>{{ "%.2f"|format(s.line_profit or 0) }}</td>
+        <td>
+          {% set linked_invoice = linked_invoices.get(s.id) %}
+          {% if linked_invoice %}
+            <a href="{{ url_for('invoices.view_invoice', invoice_id=linked_invoice.id) }}">View {{ linked_invoice.invoice_number }}</a>
+          {% else %}
+            <form method="post" action="{{ url_for('invoices.create_invoice_from_sale', sale_id=s.id) }}" style="display:inline;">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" style="padding:6px 10px;">Create Invoice</button>
+            </form>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </table>

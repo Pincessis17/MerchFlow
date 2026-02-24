@@ -1,6 +1,6 @@
 # app/utils/permissions.py
 
-from flask import current_app, session
+from flask import session
 from ..models import FeatureAccess
 
 
@@ -11,9 +11,9 @@ def has_feature_access(feature_name):
 
     company_id = user.get("company_id")
     email = user.get("email")
+    role = str(user.get("role") or "").strip().lower()
 
-    admin_emails = current_app.config.get("PLATFORM_ADMIN_EMAILS") or set()
-    if str(email or "").strip().lower() in admin_emails:
+    if role == "admin":
         return True
 
     access = FeatureAccess.query.filter_by(

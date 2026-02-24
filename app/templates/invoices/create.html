@@ -6,6 +6,7 @@
 
   <form method="post">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="sale_id" value="{{ request.args.get('sale_id', '') }}">
 
     <div class="grid2">
       <div>
@@ -34,21 +35,39 @@
       </div>
     </div>
 
+    <div>
+      <label>Payment Method</label>
+      <select name="payment_method">
+        {% for method_value, method_label in payment_method_choices %}
+          <option value="{{ method_value }}" {% if method_value == 'pending' %}selected{% endif %}>
+            {{ method_label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
     <h3>Line Items</h3>
     <table>
-      <tr>
-        <th>Description</th>
-        <th>Quantity</th>
-        <th>Unit Price</th>
-      </tr>
-      {% for i in range(1, 6) %}
+      <thead>
         <tr>
-          <td><input name="item_description" placeholder="Item {{ i }}"></td>
-          <td><input name="item_quantity" type="number" min="0" step="0.01" value="{{ 1 if i == 1 else '' }}"></td>
-          <td><input name="item_unit_price" type="number" min="0" step="0.01"></td>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit Price</th>
+          <th>Action</th>
         </tr>
-      {% endfor %}
+      </thead>
+      <tbody id="line-items-body">
+        <tr>
+          <td><input name="item_description" placeholder="Item description"></td>
+          <td><input name="item_quantity" type="number" min="0" step="0.01" value="1"></td>
+          <td><input name="item_unit_price" type="number" min="0" step="0.01"></td>
+          <td><button type="button" class="btn remove-line-item-btn">Remove</button></td>
+        </tr>
+      </tbody>
     </table>
+    <div style="margin-top:8px;">
+      <button type="button" class="btn" id="add-line-item-btn">+ Add More Item</button>
+    </div>
 
     <div class="grid2">
       <div>
@@ -80,4 +99,5 @@
       <button type="submit" name="action" value="mark_paid">Save and Mark Paid</button>
     </div>
   </form>
+  <script src="{{ url_for('static', filename='invoice_create.js') }}"></script>
 {% endblock %}

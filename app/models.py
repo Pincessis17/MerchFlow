@@ -245,6 +245,7 @@ class Sale(db.Model):
     company = db.relationship("Company", back_populates="sales")
     product = db.relationship("Product", back_populates="sales")
     payments = db.relationship("Payment", back_populates="sale", cascade="all, delete-orphan")
+    invoices = db.relationship("Invoice", back_populates="sale")
 
     __table_args__ = (
         CheckConstraint("quantity > 0"),
@@ -722,6 +723,11 @@ class Invoice(db.Model):
         db.ForeignKey("user.id", ondelete="SET NULL"),
         index=True,
     )
+    sale_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sale.id", ondelete="SET NULL"),
+        index=True,
+    )
 
     invoice_number = db.Column(db.String(60), nullable=False, index=True)
     customer_name = db.Column(db.String(120), nullable=False)
@@ -729,6 +735,7 @@ class Invoice(db.Model):
     billing_address = db.Column(db.String(300))
 
     status = db.Column(db.String(20), nullable=False, default="draft", index=True)
+    payment_method = db.Column(db.String(40), nullable=False, default="pending")
     currency = db.Column(db.String(10), nullable=False, default="GHS")
 
     subtotal = db.Column(db.Float, nullable=False, default=0.0)
@@ -760,6 +767,7 @@ class Invoice(db.Model):
 
     company = db.relationship("Company", back_populates="invoices")
     created_by_user = db.relationship("User", back_populates="invoices_created")
+    sale = db.relationship("Sale", back_populates="invoices")
     line_items = db.relationship(
         "InvoiceLineItem",
         back_populates="invoice",
@@ -769,6 +777,7 @@ class Invoice(db.Model):
 
     __table_args__ = (
         UniqueConstraint("company_id", "invoice_number", name="uq_company_invoice_number"),
+        UniqueConstraint("sale_id", name="uq_invoice_sale_id"),
         CheckConstraint("subtotal >= 0"),
         CheckConstraint("tax_rate >= 0"),
         CheckConstraint("tax_amount >= 0"),

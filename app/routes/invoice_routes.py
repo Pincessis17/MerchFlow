@@ -15,16 +15,27 @@ from flask import (
 )
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 
 from .. import db
-from ..models import Company, Invoice, InvoiceLineItem, InvoiceSetting, TenantNotification, User
+from ..models import Company, Invoice, InvoiceLineItem, InvoiceSetting, Sale, TenantNotification, User
 from ..utils.analytics import send_ga4_event
 from ..utils.auth import login_required, tenant_role_required
 from ..utils.notifications import create_tenant_notification, send_email_notification
 
 invoices_bp = Blueprint("invoices", __name__, url_prefix="/invoices")
 ALLOWED_LOGO_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+PAYMENT_METHOD_CHOICES = [
+    ("pending", "Pending / Not selected"),
+    ("cash", "Cash"),
+    ("bank_transfer", "Bank Transfer"),
+    ("card", "Card"),
+    ("mobile_money", "Mobile Money"),
+    ("cheque", "Cheque"),
+    ("other", "Other"),
+]
+ALLOWED_PAYMENT_METHODS = {choice[0] for choice in PAYMENT_METHOD_CHOICES}
 
 
 def _current_company_id():
@@ -46,6 +57,13 @@ def _parse_date(raw_value: str | None):
         return datetime.strptime(raw_value, "%Y-%m-%d")
     except ValueError:
         return None
+
+
+def _normalize_payment_method(raw_value: str | None, default: str = "pending") -> str:
+    value = str(raw_value or "").strip().lower().replace(" ", "_")
+    if value in ALLOWED_PAYMENT_METHODS:
+        return value
+    return default
 
 
 def _calculate_totals(line_items: list[dict], tax_rate: float, discount_type: str, discount_value: float):
@@ -150,11 +168,30 @@ def list_invoices():
         flash("Session expired. Please log in again.", "error")
         return redirect(url_for("auth.login"))
 
-    invoices = (
-        Invoice.query.filter_by(company_id=company_id)
-        .order_by(Invoice.created_at.desc())
-        .all()
-    )
+    search_query = (request.args.get("q") or "").strip()
+    issue_date_raw = (request.args.get("issue_date") or "").strip()
+
+    invoices_query = Invoice.query.filter_by(company_id=company_id)
+    if search_query:
+        like_value = f"%{search_query}%"
+        invoices_query = invoices_query.filter(
+            or_(
+                Invoice.invoice_number.ilike(like_value),
+                Invoice.customer_name.ilike(like_value),
+                Invoice.customer_email.ilike(like_value),
+            )
+        )
+
+    if issue_date_raw:
+        issue_date = _parse_date(issue_date_raw)
+        if issue_date:
+            invoices_query = invoices_query.filter(
+                db.func.date(Invoice.issue_date) == issue_date.strftime("%Y-%m-%d")
+            )
+        else:
+            flash("Invoice date filter is invalid. Use YYYY-MM-DD.", "error")
+
+    invoices = invoices_query.order_by(Invoice.created_at.desc()).all()
     notifications = (
         TenantNotification.query.filter_by(company_id=company_id, is_read=False)
         .order_by(TenantNotification.created_at.desc())
@@ -166,6 +203,9 @@ def list_invoices():
         title="Invoices",
         invoices=invoices,
         tenant_notifications=notifications,
+        search_query=search_query,
+        issue_date_filter=issue_date_raw,
+        payment_method_choices=PAYMENT_METHOD_CHOICES,
     )
 
 
@@ -181,6 +221,76 @@ def mark_tenant_notifications_read():
         ).update({"is_read": True}, synchronize_session=False)
         db.session.commit()
     return redirect(url_for("invoices.list_invoices"))
+
+
+@invoices_bp.route("/from-sale/<int:sale_id>", methods=["POST"])
+@login_required
+@tenant_role_required("admin", "manager", "staff")
+def create_invoice_from_sale(sale_id):
+    company_id = _current_company_id()
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
+    sale = Sale.query.filter_by(id=sale_id, company_id=company_id).first_or_404()
+    existing_invoice = Invoice.query.filter_by(company_id=company_id, sale_id=sale.id).first()
+    if existing_invoice:
+        flash("An invoice already exists for this sale.", "info")
+        return redirect(url_for("invoices.view_invoice", invoice_id=existing_invoice.id))
+
+    company = Company.query.get_or_404(company_id)
+    setting = _ensure_invoice_settings(company)
+    issue_date = datetime.utcnow()
+    invoice_number = _generate_invoice_number(setting, issue_date)
+
+    payment_method = _normalize_payment_method(request.form.get("payment_method"), default="pending")
+
+    product_name = sale.product.name if sale.product else f"Sale #{sale.id}"
+    invoice = Invoice(
+        company_id=company_id,
+        created_by_user_id=(session.get("user") or {}).get("id"),
+        sale_id=sale.id,
+        invoice_number=invoice_number,
+        customer_name=(request.form.get("customer_name") or "").strip() or "Walk-in Customer",
+        status="draft",
+        payment_method=payment_method,
+        currency="GHS",
+        subtotal=round(float(sale.line_total or 0.0), 2),
+        tax_rate=0.0,
+        tax_amount=0.0,
+        discount_type="none",
+        discount_value=0.0,
+        discount_amount=0.0,
+        total_amount=round(float(sale.line_total or 0.0), 2),
+        issue_date=issue_date,
+        due_date=None,
+        notes=f"Auto-generated from sale #{sale.id}",
+    )
+    db.session.add(invoice)
+    db.session.flush()
+
+    db.session.add(
+        InvoiceLineItem(
+            invoice_id=invoice.id,
+            description=product_name[:300],
+            quantity=float(sale.quantity or 0),
+            unit_price=round(float(sale.unit_price or 0.0), 2),
+            line_total=round(float(sale.line_total or 0.0), 2),
+            sort_order=1,
+        )
+    )
+
+    create_tenant_notification(
+        company_id=company_id,
+        event_type="invoice.created_from_sale",
+        title="Invoice created from sale",
+        message=f"Invoice {invoice.invoice_number} was generated from sale #{sale.id}.",
+        category="success",
+        payload={"invoice_id": invoice.id, "sale_id": sale.id},
+    )
+    db.session.commit()
+    flash("Invoice generated from sale.", "success")
+    return redirect(url_for("invoices.view_invoice", invoice_id=invoice.id))
 
 
 @invoices_bp.route("/new", methods=["GET", "POST"])
@@ -202,12 +312,27 @@ def create_invoice():
         notes = (request.form.get("notes") or "").strip()
         issue_date = _parse_date(request.form.get("issue_date")) or datetime.utcnow()
         due_date = _parse_date(request.form.get("due_date"))
+        payment_method = _normalize_payment_method(request.form.get("payment_method"), default="pending")
 
         tax_rate = max(_parse_float(request.form.get("tax_rate"), 0.0), 0.0)
         discount_type = (request.form.get("discount_type") or "none").strip().lower()
         discount_value = max(_parse_float(request.form.get("discount_value"), 0.0), 0.0)
         action = (request.form.get("action") or "save_draft").strip().lower()
+        sale_id_raw = (request.form.get("sale_id") or "").strip()
+        sale_id = int(sale_id_raw) if sale_id_raw.isdigit() else None
+        linked_sale = None
+        if sale_id:
+            linked_sale = Sale.query.filter_by(id=sale_id, company_id=company_id).first()
+            if not linked_sale:
+                flash("Linked sale was not found.", "error")
+                return redirect(url_for("invoices.create_invoice"))
+            existing_link = Invoice.query.filter_by(company_id=company_id, sale_id=sale_id).first()
+            if existing_link:
+                flash("An invoice already exists for this sale.", "info")
+                return redirect(url_for("invoices.view_invoice", invoice_id=existing_link.id))
 
+        if linked_sale and not customer_name:
+            customer_name = "Walk-in Customer"
         if not customer_name:
             flash("Customer name is required.", "error")
             return redirect(url_for("invoices.create_invoice"))
@@ -224,16 +349,21 @@ def create_invoice():
             discount_value,
         )
         status = "paid" if action == "mark_paid" else "draft"
+        if status == "paid" and payment_method == "pending":
+            flash("Choose a payment method before marking this invoice as paid.", "error")
+            return redirect(url_for("invoices.create_invoice"))
         paid_at = datetime.utcnow() if status == "paid" else None
 
         invoice = Invoice(
             company_id=company_id,
             created_by_user_id=(session.get("user") or {}).get("id"),
+            sale_id=sale_id,
             invoice_number=_generate_invoice_number(setting, issue_date),
             customer_name=customer_name,
             customer_email=customer_email or None,
             billing_address=billing_address or None,
             status=status,
+            payment_method=payment_method,
             currency="GHS",
             subtotal=subtotal,
             tax_rate=tax_rate,
@@ -296,7 +426,7 @@ def create_invoice():
             send_email_notification(
                 tenant_admin_email,
                 "Payment received",
-                f"Invoice {invoice.invoice_number} has been marked as paid.",
+                f"Invoice {invoice.invoice_number} has been marked as paid via {invoice.payment_method}.",
             )
             create_tenant_notification(
                 company_id=company_id,
@@ -316,6 +446,7 @@ def create_invoice():
         title="Create Invoice",
         settings=setting,
         today=datetime.utcnow().strftime("%Y-%m-%d"),
+        payment_method_choices=PAYMENT_METHOD_CHOICES,
     )
 
 
@@ -330,6 +461,7 @@ def view_invoice(invoice_id):
         title=f"Invoice {invoice.invoice_number}",
         invoice=invoice,
         settings=settings,
+        payment_method_choices=PAYMENT_METHOD_CHOICES,
     )
 
 
@@ -339,7 +471,16 @@ def view_invoice(invoice_id):
 def mark_invoice_paid(invoice_id):
     company_id = _current_company_id()
     invoice = Invoice.query.filter_by(id=invoice_id, company_id=company_id).first_or_404()
+    payment_method = _normalize_payment_method(
+        request.form.get("payment_method"),
+        default=(invoice.payment_method or "pending"),
+    )
+    if payment_method == "pending":
+        flash("Please choose a payment method before marking invoice paid.", "error")
+        return redirect(url_for("invoices.view_invoice", invoice_id=invoice.id))
+
     invoice.status = "paid"
+    invoice.payment_method = payment_method
     invoice.paid_at = datetime.utcnow()
 
     create_tenant_notification(
@@ -363,7 +504,7 @@ def mark_invoice_paid(invoice_id):
         send_email_notification(
             tenant_admin_email,
             "Payment received",
-            f"Invoice {invoice.invoice_number} has been marked as paid.",
+            f"Invoice {invoice.invoice_number} has been marked as paid via {invoice.payment_method}.",
         )
 
     db.session.commit()
@@ -395,6 +536,11 @@ def download_invoice_pdf(invoice_id):
     y -= 14
     if invoice.due_date:
         c.drawString(40, y, f"Due Date: {invoice.due_date.strftime('%Y-%m-%d')}")
+        y -= 14
+    c.drawString(40, y, f"Payment Method: {(invoice.payment_method or 'pending').replace('_', ' ').title()}")
+    y -= 14
+    if invoice.sale_id:
+        c.drawString(40, y, f"Linked Sale: #{invoice.sale_id}")
         y -= 14
     c.drawString(40, y, f"Customer: {invoice.customer_name}")
     y -= 20

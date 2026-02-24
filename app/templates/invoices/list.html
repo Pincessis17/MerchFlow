@@ -7,6 +7,26 @@
     <a class="btn" href="{{ url_for('invoices.invoice_settings') }}">Invoice Settings</a>
   </p>
 
+  <div class="card">
+    <h3>Search Invoices</h3>
+    <form method="get" style="display:grid; gap:10px;">
+      <div class="grid2">
+        <div>
+          <label for="q">Search by customer name, invoice number, or email</label>
+          <input id="q" name="q" value="{{ search_query or '' }}" placeholder="e.g. INV-2026-00001 or customer name">
+        </div>
+        <div>
+          <label for="issue_date">Issue Date</label>
+          <input id="issue_date" name="issue_date" type="date" value="{{ issue_date_filter or '' }}">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap: wrap;">
+        <button type="submit" class="btn">Search</button>
+        <a class="btn" href="{{ url_for('invoices.list_invoices') }}">Clear</a>
+      </div>
+    </form>
+  </div>
+
   {% if tenant_notifications %}
     <div class="card">
       <h3>Notifications</h3>
@@ -37,6 +57,7 @@
         <th>Invoice</th>
         <th>Customer</th>
         <th>Status</th>
+        <th>Payment Method</th>
         <th>Total</th>
         <th>Issue Date</th>
         <th>Actions</th>
@@ -49,6 +70,7 @@
           <td>
             <span class="status-pill {{ inv.status }}">{{ inv.status|upper }}</span>
           </td>
+          <td>{{ (inv.payment_method or "pending").replace("_", " ")|title }}</td>
           <td>{{ "%.2f"|format(inv.total_amount or 0) }} {{ inv.currency }}</td>
           <td>{{ inv.issue_date.strftime('%Y-%m-%d') }}</td>
           <td>

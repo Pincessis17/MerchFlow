@@ -1,6 +1,7 @@
 # app/routes/sales_routes.py
 from datetime import datetime, date, time
 
+from sqlalchemy import or_
 from flask import (
     Blueprint,
     render_template,
@@ -12,7 +13,7 @@ from flask import (
 )
 
 from .. import db
-from ..models import Product, Sale
+from ..models import Invoice, Product, Sale
 from ..utils.auth import login_required
 
 sales_bp = Blueprint("sales", __name__, url_prefix="/sales")
@@ -29,12 +30,18 @@ def sales_home():
         flash("Session expired. Please log in again.", "error")
         return redirect(url_for("auth.login"))
 
-    products = (
-        Product.query
-        .filter_by(company_id=company_id)
-        .order_by(Product.name)
-        .all()
-    )
+    search_query = (request.args.get("q") or "").strip()
+    products_query = Product.query.filter_by(company_id=company_id)
+    if search_query:
+        like_value = f"%{search_query}%"
+        products_query = products_query.filter(
+            or_(
+                Product.name.ilike(like_value),
+                Product.code.ilike(like_value),
+                Product.category.ilike(like_value),
+            )
+        )
+    products = products_query.order_by(Product.name.asc()).all()
 
     # ---------- HANDLE NEW SALE (POST) ----------
     if request.method == "POST":
@@ -100,13 +107,38 @@ def sales_home():
     # ---------- SHOW PAGE (GET) ----------
 
     # Recent sales table
+    recent_sales_query = Sale.query.filter_by(company_id=company_id)
+    if search_query:
+        like_value = f"%{search_query}%"
+        recent_sales_query = (
+            recent_sales_query
+            .join(Product, Product.id == Sale.product_id)
+            .filter(
+                or_(
+                    Product.name.ilike(like_value),
+                    Product.code.ilike(like_value),
+                    Product.category.ilike(like_value),
+                )
+            )
+        )
+
     recent_sales = (
-        Sale.query
-        .filter_by(company_id=company_id)
+        recent_sales_query
         .order_by(Sale.created_at.desc())
-        .limit(20)
+        .limit(50)
         .all()
     )
+    recent_sale_ids = [sale.id for sale in recent_sales]
+    linked_invoices = {}
+    if recent_sale_ids:
+        linked_invoices = {
+            inv.sale_id: inv
+            for inv in Invoice.query.filter(
+                Invoice.company_id == company_id,
+                Invoice.sale_id.in_(recent_sale_ids),
+            ).all()
+            if inv.sale_id is not None
+        }
 
     # Today's summary
     today = date.today()
@@ -139,6 +171,8 @@ def sales_home():
         today_items_sold=today_items_sold,
         today_total_amount=today_total_amount,
         today_total_profit=today_total_profit,
+        search_query=search_query,
+        linked_invoices=linked_invoices,
 
     )
 
