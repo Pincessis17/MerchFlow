@@ -12,6 +12,7 @@
 <h3>Record Expense</h3>
 
 <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
   <div>
     <label>Date</label><br>
     <input type="date" name="expense_date">
@@ -59,6 +60,7 @@
       <td>
         <form method="POST" action="{{ url_for('financial.delete_expense', expense_id=e.id) }}"
               onsubmit="return confirm('Delete this expense?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <button type="submit">Delete</button>
         </form>
       </td>

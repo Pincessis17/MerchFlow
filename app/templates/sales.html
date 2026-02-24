@@ -8,6 +8,7 @@
 <h3>Record New Sale</h3>
 
 <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
   <div>
     <label for="product_id">Product</label><br>
     <select id="product_id" name="product_id">
