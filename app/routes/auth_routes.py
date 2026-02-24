@@ -1,9 +1,8 @@
 # app/routes/auth_routes.py
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from .. import db
+from .. import db, limiter
 from ..models import User
-from flask_limiter import Limiter
 from flask import current_app
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
