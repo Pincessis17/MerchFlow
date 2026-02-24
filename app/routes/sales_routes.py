@@ -8,6 +8,7 @@ from flask import (
     redirect,
     url_for,
     flash,
+    session,
 )
 
 from .. import db
@@ -64,6 +65,7 @@ def sales_home():
 
         # Create Sale
         sale = Sale(
+            company_id=session.get("user", {}).get("company_id"),
             product=product,
             quantity=quantity,
             unit_price=unit_price,
