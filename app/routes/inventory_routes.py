@@ -1,5 +1,5 @@
 # app/routes/inventory_routes.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from .. import db
 from ..models import Product
@@ -62,7 +62,7 @@ def inventory_home():
             category=category,
             expiry_date=expiry_date,
             price=price,
-            company_id=request.user.company_id,
+            company_id=session.get("user", {}).get("company_id"),
         )
 
         db.session.add(product)
