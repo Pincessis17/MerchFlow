@@ -69,6 +69,8 @@ The app will fail to start in production if `SECRET_KEY` or `DATABASE_URL` is mi
   - Tenant suspend/activate/cancel controls
   - Real-time platform notifications
   - Platform audit logs and CSV exports
+  - If `PLATFORM_ADMIN_EMAILS` is not configured correctly, the app allows a bootstrap fallback:
+    first admin account can access platform owner routes to prevent lockout.
 
 - **Tenant invoice module**: `/invoices`
   - Create invoice with line items
