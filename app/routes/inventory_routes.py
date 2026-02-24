@@ -59,10 +59,10 @@ def inventory_home():
             code=code,
             name=name,
             quantity=quantity,
-            unit=unit,
             category=category,
             expiry_date=expiry_date,
             price=price,
+            company_id=request.user.company_id,
         )
 
         db.session.add(product)
@@ -93,7 +93,6 @@ def edit_product(product_id):
         except ValueError:
             product.quantity = 0
 
-        product.unit = (request.form.get("unit") or "").strip() or None
         product.category = (request.form.get("category") or "").strip() or None
 
         expiry_raw = (request.form.get("expiry_date") or "").strip()
