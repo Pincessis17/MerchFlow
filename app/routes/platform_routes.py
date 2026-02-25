@@ -350,6 +350,19 @@ def toggle_plan(plan_id):
 def tenants():
     companies = Company.query.order_by(Company.created_at.desc()).all()
     plans = SubscriptionPlan.query.filter_by(is_active=True).order_by(SubscriptionPlan.name.asc()).all()
+    
+    active_count = sum(1 for c in companies if c.status == "active" and not c.is_suspended)
+    
+    active_subscriptions = (
+        TenantSubscription.query.filter(TenantSubscription.status == "active")
+        .all()
+    )
+    mrr = sum(_monthly_recurring_value(sub) for sub in active_subscriptions)
+    
+    now = datetime.utcnow()
+    window_end = now + timedelta(days=30)
+    expiring_soon_count = sum(1 for sub in active_subscriptions if sub.current_period_end and now <= sub.current_period_end <= window_end)
+    
     tenant_rows = []
     for company in companies:
         tenant_rows.append({"company": company, "subscription": _latest_subscription(company.id)})
@@ -359,6 +372,10 @@ def tenants():
         title="Tenants",
         tenant_rows=tenant_rows,
         plans=plans,
+        total_tenants=len(companies),
+        active_leases=active_count,
+        expiring_soon=expiring_soon_count,
+        monthly_revenue=mrr,
     )
 
 
@@ -367,28 +384,25 @@ def tenants():
 def create_tenant():
     company_name = (request.form.get("company_name") or "").strip()
     company_email = (request.form.get("company_email") or "").strip().lower() or None
-    admin_name = (request.form.get("admin_name") or "").strip() or "Admin"
-    admin_email = (request.form.get("admin_email") or "").strip().lower()
-    admin_password = request.form.get("admin_password") or ""
-    plan_id = _safe_int(request.form.get("plan_id"), 0) or None
-    status = (request.form.get("status") or "trial").strip().lower()
-    billing_cycle = (request.form.get("billing_cycle") or "monthly").strip().lower()
-    amount = max(_safe_float(request.form.get("amount"), 0.0), 0.0)
+    phone = (request.form.get("phone") or "").strip()
+    address = (request.form.get("address") or "").strip()
+    status = (request.form.get("status") or "active").strip().lower()
+    
+    # We still need to create an admin user to satisfy the DB schema constraints
+    admin_email = f"admin_{datetime.utcnow().timestamp()}@example.com"
+    admin_password = "DefaultPassword123!"
 
-    if not company_name or not admin_email or not admin_password:
-        flash("Company name, admin email, and admin password are required.", "error")
-        return redirect(url_for("platform.tenants"))
-
-    existing_admin_user = User.query.filter_by(email=admin_email).first()
-    if existing_admin_user:
-        flash("Admin email already exists.", "error")
+    if not company_name:
+        flash("Tenant name is required.", "error")
         return redirect(url_for("platform.tenants"))
 
     company = Company(
         name=company_name,
         email=company_email,
-        status=status if status in {"trial", "active", "cancelled"} else "trial",
-        trial_ends_at=datetime.utcnow() + timedelta(days=14),
+        phone=phone,
+        address=address,
+        status=status if status in {"active", "expiring", "past due"} else "active",
+        trial_ends_at=datetime.utcnow() + timedelta(days=365),
     )
     db.session.add(company)
     db.session.flush()
@@ -396,69 +410,14 @@ def create_tenant():
     admin_user = User(
         company_id=company.id,
         email=admin_email,
-        name=admin_name,
+        name=company_name,
         role="admin",
     )
     admin_user.set_password(admin_password)
     db.session.add(admin_user)
 
-    subscription = TenantSubscription(
-        company_id=company.id,
-        plan_id=plan_id,
-        status=company.status,
-        billing_cycle=billing_cycle if billing_cycle in {"monthly", "yearly"} else "monthly",
-        amount=amount,
-        started_at=datetime.utcnow(),
-        trial_ends_at=company.trial_ends_at if company.status == "trial" else None,
-        current_period_end=datetime.utcnow() + timedelta(days=30),
-    )
-    db.session.add(subscription)
-
-    create_platform_notification(
-        event_type="tenant.registered",
-        category="success",
-        title="New tenant subscribed",
-        message=f"{company.name} has been created with status '{company.status}'.",
-        company_id=company.id,
-        payload={"company_id": company.id, "company_name": company.name},
-    )
-    log_platform_audit(
-        "tenant.created",
-        "company",
-        target_id=str(company.id),
-        company_id=company.id,
-        details=f"status={company.status}",
-    )
-    send_ga4_event(
-        "tenant_registered",
-        params={
-            "company_id": company.id,
-            "status": company.status,
-            "plan_id": plan_id or 0,
-            "billing_cycle": subscription.billing_cycle,
-        },
-    )
-    _email_platform_owners(
-        "New tenant subscription",
-        (
-            f"New tenant created: {company.name} (ID {company.id})\n"
-            f"Status: {company.status}\n"
-            f"Admin: {admin_email}"
-        ),
-    )
-    if company_email:
-        send_email_notification(
-            company_email,
-            "Welcome to MerchFlow",
-            (
-                f"Your tenant '{company.name}' has been created.\n"
-                f"Admin login email: {admin_email}\n"
-                "Please sign in and update your profile settings."
-            ),
-        )
-
     db.session.commit()
-    flash("Tenant company created successfully.", "success")
+    flash("New tenant added successfully.", "success")
     return redirect(url_for("platform.tenants"))
 
 

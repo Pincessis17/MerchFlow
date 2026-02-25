@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+
+{% block title %}Suppliers - Pharmacy App{% endblock %}
+
+{% block content %}
+<h2>Suppliers</h2>
+
+<p>
+  <a href="{{ url_for('financial.financial_home') }}">← Back to Financial</a>
+</p>
+
+<h3>Add Supplier</h3>
+<form method="POST" style="margin-bottom:16px;">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <div>
+    <label>Name *</label><br>
+    <input type="text" name="name" required>
+  </div>
+  <div>
+    <label>Phone</label><br>
+    <input type="text" name="phone">
+  </div>
+  <div>
+    <label>Email</label><br>
+    <input type="email" name="email">
+  </div>
+  <div>
+    <label>Address</label><br>
+    <input type="text" name="address">
+  </div>
+
+  <button type="submit">Add Supplier</button>
+</form>
+
+<hr>
+
+<h3>Current Suppliers</h3>
+{% if suppliers %}
+  <table border="1" cellpadding="5">
+    <tr>
+      <th>#</th>
+      <th>Name</th>
+      <th>Phone</th>
+      <th>Email</th>
+      <th>Address</th>
+    </tr>
+    {% for s in suppliers %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ s.name }}</td>
+        <td>{{ s.phone or "" }}</td>
+        <td>{{ s.email or "" }}</td>
+        <td>{{ s.address or "" }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <p>No suppliers yet.</p>
+{% endif %}
+
+{% endblock %}

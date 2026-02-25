@@ -6,25 +6,26 @@
   <title>{{ title or "Platform Console" }}</title>
   <style>
     :root {
-      --bg: #0A1F15;
-      --card: #133223;
-      --line: #2F5C45;
-      --text: #F0FAF3;
-      --muted: #C3D8CA;
-      --accent: #24A160;
-      --warn: #E8B12B;
-      --danger: #ff6b6b;
-      --ok: #37d67a;
+      --bg: #F8FAFC;
+      --card: #FFFFFF;
+      --line: #E2E8F0;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --accent: #4338CA;
+      --accent-hover: #3730A3;
+      --warn: #F59E0B;
+      --danger: #EF4444;
+      --ok: #10B981;
+      --ok-bg: #D1FAE5;
+      --warn-bg: #FEF3C7;
+      --danger-bg: #FEE2E2;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background:
-        radial-gradient(1100px 560px at 10% -10%, rgba(36,161,96,.24), transparent 60%),
-        radial-gradient(900px 500px at 90% 0%, rgba(232,177,43,.18), transparent 58%),
-        linear-gradient(180deg, #06130d, var(--bg));
+      background: var(--bg);
       color: var(--text);
-      font-family: Inter, Segoe UI, Arial, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     .container { max-width: 1250px; margin: 0 auto; padding: 20px; }
     .topbar {
@@ -32,105 +33,143 @@
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      padding: 14px;
+      padding: 12px 20px;
       border: 1px solid var(--line);
-      border-radius: 12px;
-      background: rgba(19, 47, 34, 0.93);
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      background: #FFFFFF;
       position: sticky;
-      top: 10px;
+      top: 0;
       z-index: 2;
     }
     .brand {
       font-weight: 700;
-      letter-spacing: 0.2px;
+      font-size: 18px;
+      letter-spacing: -0.01em;
       display: flex;
       align-items: center;
       gap: 10px;
+      color: #1E293B;
     }
     .brand img {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       display: block;
-      filter: drop-shadow(0 8px 16px rgba(36,161,96,.22));
     }
-    .pill {
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 6px 10px;
-      color: var(--muted);
-    }
-    .nav { display: flex; gap: 10px; flex-wrap: wrap; }
+    .nav { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 20px; }
     .nav a, .nav button {
-      color: var(--text);
+      color: var(--text-muted);
       text-decoration: none;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 8px 10px;
-      background: #17432D;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      background: transparent;
+      font-weight: 500;
+      font-size: 14px;
       cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav a:hover {
+      background: #F1F5F9;
+      color: var(--text);
     }
     .nav a.active {
-      border-color: rgba(107,190,144,.55);
-      background: rgba(36,161,96,.24);
+      background: #EEF2FF;
+      color: var(--accent);
     }
-    .grid {
-      margin-top: 16px;
-      display: grid;
-      gap: 12px;
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-left: auto;
     }
-    .cards { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+    .grid { display: grid; gap: 16px; }
+    .cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
     .card {
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 14px;
+      padding: 20px;
       background: var(--card);
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
     }
-    .metric { font-size: 28px; font-weight: 700; margin: 8px 0 4px; }
-    .muted { color: var(--muted); font-size: 13px; }
-    .flash { margin-top: 12px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); }
-    .flash.error { border-color: #5c2a38; background: rgba(255, 107, 107, 0.13); }
-    .flash.success { border-color: #24513e; background: rgba(55, 214, 122, 0.14); }
-    .flash.info { border-color: rgba(232,177,43,.34); background: rgba(232,177,43,.16); }
-    .flash.warning { border-color: rgba(232,177,43,.34); background: rgba(232,177,43,.16); }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; }
-    th { color: var(--muted); font-weight: 600; }
+    .metric { font-size: 32px; font-weight: 700; margin: 8px 0 4px; color: #111827; letter-spacing: -0.02em; }
+    .muted { color: var(--text-muted); font-size: 14px; }
+    .flash { margin-top: 12px; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; }
+    .flash.error { border-color: #FCA5A5; background: #FEF2F2; color: #991B1B; }
+    .flash.success { border-color: #A7F3D0; background: #ECFDF5; color: #065F46; }
+    .flash.info { border-color: #BFDBFE; background: #EFF6FF; color: #1E40AF; }
+    .flash.warning { border-color: #FDE68A; background: #FFFBEB; color: #92400E; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; text-align: left; }
+    th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    td { border-bottom: 1px solid var(--line); padding: 16px; font-size: 14px; color: #334155; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
     input, select, textarea {
       width: 100%;
       border: 1px solid var(--line);
-      background: #17422E;
+      background: #FFFFFF;
       color: var(--text);
-      border-radius: 10px;
-      padding: 10px;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      transition: border-color 0.2s;
     }
-    .form-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.1);
+    }
+    .form-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
     .btn {
-      border: 1px solid var(--line);
-      background: #1A4A32;
-      color: var(--text);
-      padding: 9px 12px;
-      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #FFFFFF;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-    .btn-danger { background: #5a2330; }
-    .btn-warn { background: #7D5A1A; }
+    .btn:hover { background: var(--accent-hover); }
+    .btn-secondary {
+      background: #FFFFFF;
+      color: #334155;
+      border: 1px solid var(--line);
+    }
+    .btn-secondary:hover { background: #F8FAFC; }
+    .btn-danger { background: var(--danger); }
+    .btn-danger:hover { background: #DC2626; }
+    .btn-warn { background: var(--warn); }
+    .btn-warn:hover { background: #D97706; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="topbar">
-      <div class="brand">
-        <img src="{{ url_for('static', filename='branding/merchflow-mark.svg') }}" alt="MerchFlow logo mark">
-        <span>MerchFlow Platform Console</span>
+      <div style="display: flex; align-items: center;">
+        <div class="brand">
+          <img src="{{ url_for('static', filename='branding/merchflow-mark.svg') }}" alt="MerchFlow logo mark" style="filter: none;">
+          <span>PropertyAdmin</span>
+        </div>
+        <div class="nav">
+          <a href="{{ url_for('platform.dashboard') }}" class="{% if request.endpoint == 'platform.dashboard' %}active{% endif %}">Dashboard</a>
+          <a href="{{ url_for('platform.tenants') }}" class="{% if request.endpoint == 'platform.tenants' %}active{% endif %}">Tenants</a>
+          <a href="{{ url_for('platform.plans') }}" class="{% if request.endpoint == 'platform.plans' %}active{% endif %}">Plans</a>
+          <a href="{{ url_for('platform.audit_logs') }}" class="{% if request.endpoint == 'platform.audit_logs' %}active{% endif %}">Audit Logs</a>
+        </div>
       </div>
-      <div class="nav">
-        <a href="{{ url_for('platform.dashboard') }}" class="{% if request.endpoint == 'platform.dashboard' %}active{% endif %}">Dashboard</a>
-        <a href="{{ url_for('platform.tenants') }}" class="{% if request.endpoint == 'platform.tenants' %}active{% endif %}">Tenants</a>
-        <a href="{{ url_for('platform.plans') }}" class="{% if request.endpoint == 'platform.plans' %}active{% endif %}">Plans</a>
-        <a href="{{ url_for('platform.audit_logs') }}" class="{% if request.endpoint == 'platform.audit_logs' %}active{% endif %}">Audit Logs</a>
-        <a href="{{ url_for('home') }}">Tenant App</a>
+      <div class="topbar-right">
+        {% block topbar_actions %}{% endblock %}
+        <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; background: #FFEDD5; color: #C2410C; font-weight: bold; border-radius: 50%; border: none; font-size: 14px;">
+          {{ session.get('user', {}).get('email', 'A')[0] | upper }}
+        </div>
       </div>
-      <div class="pill">{{ session.get('user', {}).get('email', '') }}</div>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=True) %}
