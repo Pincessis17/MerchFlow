@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+    <h2>Invoices</h2>
+</div>
+
+<div class="card">
+    {% if invoices %}
+    <table>
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Customer</th>
+                <th>Total Amount</th>
+                <th>Amount Paid</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in invoices %}
+            <tr>
+                <td><strong>{{ inv.invoice_number }}</strong></td>
+                <td>{{ inv.sale.customer.name if inv.sale and inv.sale.customer else 'Unknown' }}</td>
+                <td>${{ "{:,.2f}".format(inv.total_amount) }}</td>
+                <td>${{ "{:,.2f}".format(inv.amount_paid) }}</td>
+                <td>
+                    {% if inv.status == 'paid' %}
+                    <span style="color:var(--ok); font-weight:bold;">Paid</span>
+                    {% elif inv.status == 'partial' %}
+                    <span style="color:var(--info); font-weight:bold;">Partial</span>
+                    {% else %}
+                    <span style="color:var(--danger); font-weight:bold;">Unpaid</span>
+                    {% endif %}
+                </td>
+                <td class="muted">{{ inv.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <a href="{{ url_for('invoices.detail', invoice_id=inv.id) }}"
+                        style="color:var(--accent); font-weight:bold; text-decoration:none;">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No invoices found.</p>
+    {% endif %}
+</div>
+{% endblock %}

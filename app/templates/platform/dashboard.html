@@ -1,195 +1,372 @@
 {% extends "platform/base.html" %}
+
 {% block content %}
-  <div class="grid cards">
-    <div class="card">
-      <div class="muted">Active Subscribers</div>
-      <div class="metric">{{ active_count }}</div>
+<div class="header"
+  style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start;">
+  <div>
+    <h1 style="margin: 0 0 8px; font-size: 28px; letter-spacing: -0.02em;">Tenants Overview</h1>
+    <p style="margin: 0; color: var(--muted); font-size: 15px;">Manage your property residents, lease lifecycles, and
+      financial records.</p>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <div style="position: relative;">
+      <svg style="position: absolute; left: 10px; top: 10px; color: var(--muted);" width="16" height="16" fill="none"
+        stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <input type="text" placeholder="Quick search..." style="padding-left: 32px; width: 200px;">
     </div>
-    <div class="card">
-      <div class="muted">Trial Subscribers</div>
-      <div class="metric">{{ trial_count }}</div>
+    <button class="btn" onclick="document.getElementById('tenant-modal').style.display='flex'">Add New Tenant</button>
+  </div>
+</div>
+
+<div class="grid cards" style="margin-bottom: 24px;">
+  <div class="card" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+      <div
+        style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #60A5FA;">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+          </path>
+        </svg>
+      </div>
+      <span
+        style="background: rgba(36, 161, 96, 0.2); color: var(--ok); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;"></span>
     </div>
-    <div class="card">
-      <div class="muted">Cancelled Subscribers</div>
-      <div class="metric">{{ cancelled_count }}</div>
+    <div class="muted">Total Tenants</div>
+    <div class="metric">{{ total_tenants }}</div>
+  </div>
+
+  <div class="card" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+      <div
+        style="width: 40px; height: 40px; background: rgba(55, 214, 122, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--ok);">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <span style="color: var(--muted); font-size: 13px; font-weight: 500;"></span>
     </div>
-    <div class="card">
-      <div class="muted">Suspended Tenants</div>
-      <div class="metric">{{ suspended_count }}</div>
+    <div class="muted">Active Leases</div>
+    <div class="metric">{{ active_leases }}</div>
+  </div>
+
+  <div class="card" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+      <div
+        style="width: 40px; height: 40px; background: rgba(232, 177, 43, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--warn);">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+      <span style="color: var(--warn); font-size: 12px; font-weight: 600;">Next 30d</span>
     </div>
-    <div class="card">
-      <div class="muted">MRR</div>
-      <div class="metric">{{ "%.2f"|format(mrr or 0) }}</div>
+    <div class="muted">Expiring Soon</div>
+    <div class="metric">{{ expiring_soon }}</div>
+  </div>
+
+  <div class="card" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+      <div
+        style="width: 40px; height: 40px; background: rgba(168, 85, 247, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #C084FC;">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z">
+          </path>
+        </svg>
+      </div>
+      <span
+        style="background: rgba(36, 161, 96, 0.2); color: var(--ok); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;"></span>
     </div>
-    <div class="card">
-      <div class="muted">Churn Rate</div>
-      <div class="metric">{{ "%.2f"|format(churn_rate_pct or 0) }}%</div>
+    <div class="muted">Monthly Revenue</div>
+    <div class="metric">${{ "{:,.2f}".format(monthly_revenue) }}</div>
+  </div>
+</div>
+
+<div class="card" style="padding: 0;">
+  <div
+    style="padding: 16px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <select style="width: 140px; padding: 8px 12px;">
+        <option>Lease Status</option>
+      </select>
+      <select style="width: 140px; padding: 8px 12px;">
+        <option>Property Type</option>
+      </select>
+      <a href="#"
+        style="color: var(--accent); font-size: 14px; font-weight: 500; text-decoration: none; margin-left: 8px;">Clear
+        all filters</a>
     </div>
-    <div class="card">
-      <div class="muted">Conversion Rate</div>
-      <div class="metric">{{ "%.2f"|format(conversion_rate_pct or 0) }}%</div>
-    </div>
-    <div class="card">
-      <div class="muted">Failed Logins (24h)</div>
-      <div class="metric">{{ failed_logins_24h }}</div>
-    </div>
-    <div class="card">
-      <div class="muted">Database</div>
-      <div class="metric">{% if db_ok %}Healthy{% else %}Error{% endif %}</div>
-    </div>
-    <div class="card">
-      <div class="muted">Uptime (seconds)</div>
-      <div class="metric">{{ uptime_seconds }}</div>
+    <div style="color: var(--muted); font-size: 14px;">
+      Showing {{ tenants.items|length }} of {{ total_tenants }} tenants
     </div>
   </div>
 
-  <div class="grid" style="grid-template-columns: 1.2fr 1fr; align-items: start;">
-    <div class="card">
-      <h3>Revenue Trends (Monthly MRR Snapshot)</h3>
-      {% if monthly_revenue_trends %}
-        <table>
-          <tr><th>Month</th><th>Amount</th></tr>
-          {% for month, amount in monthly_revenue_trends %}
-            <tr><td>{{ month }}</td><td>{{ "%.2f"|format(amount) }}</td></tr>
-          {% endfor %}
-        </table>
-      {% else %}
-        <p class="muted">No subscription revenue data yet.</p>
-      {% endif %}
-
-      <h3 style="margin-top:16px;">Plan Breakdown</h3>
-      {% if plan_breakdown %}
-        <table>
-          <tr><th>Plan</th><th>Active Tenants</th></tr>
-          {% for plan_name, count in plan_breakdown.items() %}
-            <tr><td>{{ plan_name }}</td><td>{{ count }}</td></tr>
-          {% endfor %}
-        </table>
-      {% else %}
-        <p class="muted">No active subscriptions yet.</p>
-      {% endif %}
-
-      <h3 style="margin-top:16px;">Daily New Subscribers</h3>
-      <table>
-        <tr><th>Date</th><th>New Subscribers</th></tr>
-        {% for row in daily_new_subscribers %}
-          <tr><td>{{ row.date }}</td><td>{{ row.count }}</td></tr>
+  <div style="overflow-x: auto;">
+    <table style="margin: 0; min-width: 900px;">
+      <thead>
+        <tr>
+          <th style="padding-left: 24px;">TENANT NAME</th>
+          <th>PROPERTY ADDRESS</th>
+          <th>STATUS</th>
+          <th>PAYMENT HISTORY</th>
+          <th>CONTACT INFO</th>
+          <th style="text-align: right; padding-right: 24px;">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tenant in tenants.items %}
+        <tr class="tenant-row">
+          <td style="padding-left: 24px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img src="https://ui-avatars.com/api/?name={{ tenant.name|urlencode }}&background=random"
+                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" alt="{{ tenant.name }}">
+              <div>
+                <div style="font-weight: 600;">{{ tenant.name }}</div>
+                <div style="color: var(--muted); font-size: 12px;">Member since {{ tenant.created_at.strftime('%Y') }}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td style="line-height: 1.4;">
+            {% if tenant.property_address %}
+            {% set parts = tenant.property_address.split(', ') %}
+            <div style="font-size: 14px;">{{ parts[0] }}</div>
+            {% if parts|length > 1 %}
+            <div style="color: var(--muted); font-size: 13px;">{{ parts[1:]|join(', ') }}</div>
+            {% endif %}
+            {% else %}
+            <div style="font-size: 14px;">No address</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if tenant.lease_status == 'active' %}
+            <span
+              style="background: rgba(55, 214, 122, 0.14); color: var(--ok); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Active</span>
+            {% elif tenant.lease_status == 'expiring' %}
+            <span
+              style="background: rgba(232, 177, 43, 0.16); color: var(--warn); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Expiring</span>
+            {% elif tenant.lease_status == 'past due' %}
+            <span
+              style="background: rgba(255, 107, 107, 0.13); color: var(--danger); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Past
+              Due</span>
+            {% else %}
+            <span
+              style="background: rgba(255, 107, 107, 0.13); color: var(--danger); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">{{
+              tenant.lease_status|default('N/A', true) | title }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              {% if tenant.payment_history %}
+              {% set history = tenant.payment_history.split(',') %}
+              {% for h in history %}
+              {% if h == 'ok' %}
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--ok);"></div>
+              {% elif h == 'warn' %}
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--warn);"></div>
+              {% else %}
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--danger);"></div>
+              {% endif %}
+              {% endfor %}
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div
+              style="display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; margin-bottom: 2px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                </path>
+              </svg>
+              {{ tenant.email or 'N/A' }}
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                </path>
+              </svg>
+              {{ tenant.phone or 'N/A' }}
+            </div>
+          </td>
+          <td style="text-align: right; padding-right: 24px;">
+            <div style="display: flex; gap: 12px; justify-content: flex-end; color: var(--muted);">
+              <a href="{{ url_for('platform.tenant_detail', tenant_id=tenant.id) }}" class="icon-btn"
+                title="View Details"
+                style="border: none; background: transparent; cursor: pointer; color: inherit; padding: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                  </path>
+                </svg>
+              </a>
+              <button class="icon-btn" title="Send Message"
+                style="border: none; background: transparent; cursor: pointer; color: inherit; padding: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                  </path>
+                </svg>
+              </button>
+              <button class="icon-btn" title="Edit Tenant"
+                style="border: none; background: transparent; cursor: pointer; color: inherit; padding: 0;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
+                  </path>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
         {% endfor %}
-      </table>
-    </div>
-
-    <div class="card">
-      <h3>Real-Time Notifications</h3>
-      {% if unread_notifications %}
-        <form method="post" action="{{ url_for('platform.mark_notifications_read') }}">
-          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-          <table>
-            <tr><th>Mark</th><th>Message</th><th>Time</th></tr>
-            {% for note in unread_notifications %}
-              <tr>
-                <td><input type="checkbox" name="notification_ids" value="{{ note.id }}"></td>
-                <td><b>{{ note.title }}</b><br><span class="muted">{{ note.message }}</span></td>
-                <td>{{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-              </tr>
-            {% endfor %}
-          </table>
-          <button type="submit" class="btn">Mark Selected Read</button>
-        </form>
-      {% else %}
-        <p class="muted">No unread notifications.</p>
-      {% endif %}
-
-      <h3 style="margin-top:16px;">Abuse Signals (24h)</h3>
-      {% if abuse_signals %}
-        <table>
-          <tr><th>IP</th><th>Failed Attempts</th></tr>
-          {% for row in abuse_signals %}
-            <tr><td>{{ row.ip }}</td><td>{{ row.failed_count }}</td></tr>
-          {% endfor %}
-        </table>
-      {% else %}
-        <p class="muted">No abuse thresholds reached.</p>
-      {% endif %}
-    </div>
+        {% if not tenants.items %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 40px; color: var(--muted);">No tenants available.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
   </div>
 
-  <div class="grid" style="grid-template-columns: 1fr 1fr;">
-    <div class="card">
-      <h3>Usage Metrics per Tenant</h3>
-      {% if usage_metrics %}
-        <table>
-          <tr>
-            <th>Tenant</th><th>Users</th><th>Products</th><th>Sales</th><th>Invoices</th><th>Status</th>
-          </tr>
-          {% for row in usage_metrics %}
-            <tr>
-              <td>{{ row.company.name }}</td>
-              <td>{{ row.users }}</td>
-              <td>{{ row.products }}</td>
-              <td>{{ row.sales }}</td>
-              <td>{{ row.invoices }}</td>
-              <td>{{ row.subscription.status if row.subscription else row.company.status }}</td>
-            </tr>
-          {% endfor %}
-        </table>
-      {% else %}
-        <p class="muted">No tenants available.</p>
-      {% endif %}
+  <div
+    style="padding: 16px 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+    {% if tenants.has_prev %}
+    <a href="{{ url_for('platform.dashboard', page=tenants.prev_num) }}"
+      style="border: none; background: transparent; color: var(--accent); font-weight: 500; font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Previous
+    </a>
+    {% else %}
+    <span
+      style="border: none; background: transparent; color: var(--muted); font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 4px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Previous
+    </span>
+    {% endif %}
+
+    <div style="display: flex; gap: 4px;">
+      <span style="color: var(--text); padding: 0 4px;">Page {{ tenants.page }} of {{ tenants.pages }}</span>
     </div>
 
-    <div class="card">
-      <h3>Recent Failed Login Attempts</h3>
-      {% if recent_failed_logins %}
-        <table>
-          <tr><th>Email</th><th>IP</th><th>Score</th><th>Time</th></tr>
-          {% for row in recent_failed_logins %}
-            <tr>
-              <td>{{ row.email or '-' }}</td>
-              <td>{{ row.ip_address or '-' }}</td>
-              <td>{{ row.abuse_score }}</td>
-              <td>{{ row.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-            </tr>
-          {% endfor %}
-        </table>
-      {% else %}
-        <p class="muted">No failed login attempts logged yet.</p>
-      {% endif %}
-
-      <h3 style="margin-top:16px;">Recent Platform Audit Logs</h3>
-      {% if recent_audit_logs %}
-        <table>
-          <tr><th>Action</th><th>Actor</th><th>Target</th><th>Time</th></tr>
-          {% for log in recent_audit_logs %}
-            <tr>
-              <td>{{ log.action }}</td>
-              <td>{{ log.actor_email or '-' }}</td>
-              <td>{{ log.target_type }} {{ log.target_id or '' }}</td>
-              <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-            </tr>
-          {% endfor %}
-        </table>
-      {% else %}
-        <p class="muted">No audit logs yet.</p>
-      {% endif %}
-    </div>
+    {% if tenants.has_next %}
+    <a href="{{ url_for('platform.dashboard', page=tenants.next_num) }}"
+      style="border: none; background: transparent; color: var(--accent); font-weight: 500; font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+      Next
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </a>
+    {% else %}
+    <span
+      style="border: none; background: transparent; color: var(--muted); font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 4px;">
+      Next
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </span>
+    {% endif %}
   </div>
+</div>
 
-  <script>
-    let latestId = {% if unread_notifications %}{{ unread_notifications[0].id }}{% else %}0{% endif %};
-    async function pollPlatformNotifications() {
-      try {
-        const response = await fetch("{{ url_for('platform.poll_notifications') }}?since_id=" + latestId, { credentials: "same-origin" });
-        if (!response.ok) return;
-        const payload = await response.json();
-        const notes = payload.notifications || [];
-        if (notes.length > 0) {
-          latestId = notes[notes.length - 1].id;
-          window.location.reload();
-        }
-      } catch (err) {
-        // no-op: polling should never break primary dashboard
+<!-- Modal Background & Content -->
+<div id="tenant-modal"
+  style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 50; align-items: center; justify-content: center;">
+  <div class="card" style="width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative;">
+    <button type="button" onclick="document.getElementById('tenant-modal').style.display='none'"
+      style="position: absolute; right: 20px; top: 20px; border: none; background: transparent; font-size: 24px; color: var(--muted); cursor: pointer;">&times;</button>
+    <h2 style="margin-top: 0; color: var(--text);">Add New Tenant</h2>
+    <form method="post" action="{{ url_for('platform.create_tenant') }}" style="margin-top: 24px;">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        <div>
+          <label
+            style="display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px;">Tenant
+            Name</label>
+          <input name="company_name" required placeholder="e.g. John Cooper">
+        </div>
+        <div>
+          <label
+            style="display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px;">Email
+            Address</label>
+          <input name="company_email" type="email" placeholder="j.cooper@email.com">
+        </div>
+        <div style="grid-column: span 2;">
+          <label
+            style="display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px;">Property
+            Address</label>
+          <input name="address" required placeholder="4512 Oakwood Dr, Apt 4B, Portland, OR 97201">
+        </div>
+        <div>
+          <label
+            style="display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px;">Phone
+            Number</label>
+          <input name="phone" placeholder="+1 (503) 555-0129">
+        </div>
+        <div>
+          <label
+            style="display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px;">Status</label>
+          <select name="status">
+            <option value="active">Active</option>
+            <option value="expiring">Expiring</option>
+            <option value="past due">Past Due</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn" style="background: transparent; border: 1px solid var(--line);"
+          onclick="document.getElementById('tenant-modal').style.display='none'">Cancel</button>
+        <button class="btn" type="submit">Create Tenant</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .tenant-row {
+    transition: background-color 0.2s;
+  }
+
+  .tenant-row:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    cursor: default;
+  }
+
+  .icon-btn {
+    transition: color 0.2s;
+  }
+
+  .icon-btn:hover {
+    color: var(--accent) !important;
+  }
+</style>
+<script>
+  let latestId = 0;
+  async function pollPlatformNotifications() {
+    try {
+      const response = await fetch("{{ url_for('platform.poll_notifications') }}?since_id=" + latestId, { credentials: "same-origin" });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const notes = payload.notifications || [];
+      if (notes.length > 0) {
+        latestId = notes[notes.length - 1].id;
+        window.location.reload();
       }
+    } catch (err) {
     }
-    setInterval(pollPlatformNotifications, 15000);
-  </script>
+  }
+  setInterval(pollPlatformNotifications, 15000);
+</script>
 {% endblock %}

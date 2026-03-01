@@ -58,20 +58,20 @@ def create_app():
     from .routes.auth_routes import auth_bp
     from .routes.sales_routes import sales_bp
     from .routes.inventory_routes import inventory_bp
-    from .routes.reports_routes import reports_bp
-    from .routes.financial_routes import financial_bp
     from .routes.admin_routes import admin_bp
     from .routes.platform_routes import platform_bp
     from .routes.invoice_routes import invoices_bp
+    from .routes.customer_routes import customers_bp
+    from .routes.payment_routes import payments_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(sales_bp, url_prefix="/sales")
     app.register_blueprint(inventory_bp, url_prefix="/inventory")
-    app.register_blueprint(reports_bp, url_prefix="/reports")
-    app.register_blueprint(financial_bp, url_prefix="/financial")
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(platform_bp, url_prefix="/platform")
     app.register_blueprint(invoices_bp, url_prefix="/invoices")
+    app.register_blueprint(customers_bp, url_prefix="/customers")
+    app.register_blueprint(payments_bp, url_prefix="/payments")
 
     # ==================================================
     # CLI COMMANDS
@@ -115,7 +115,7 @@ def create_app():
     # ==================================================
     # DASHBOARD (Company Scoped)
     # ==================================================
-    from .models import Product, Sale
+    from .models import Customer, Invoice
     from .utils.auth import login_required
 
     @app.route("/")
@@ -130,95 +130,21 @@ def create_app():
 
         company_id = user["company_id"]
 
-        # ---------------------------
-        # Basic Metrics
-        # ---------------------------
-        total_products = (
-            Product.query.filter_by(company_id=company_id).count()
-        )
+        total_customers = Customer.query.filter_by(company_id=company_id).count()
+        total_invoices = Invoice.query.filter_by(company_id=company_id).count()
 
-        total_stock = (
-            db.session.query(func.coalesce(func.sum(Product.quantity), 0))
-            .filter(Product.company_id == company_id)
-            .scalar()
-        )
+        total_revenue = db.session.query(func.coalesce(func.sum(Invoice.total_amount), 0.0)) \
+            .filter(Invoice.company_id == company_id, Invoice.status == "paid").scalar()
 
-        total_sales_value = (
-            db.session.query(func.coalesce(func.sum(Sale.line_total), 0.0))
-            .filter(Sale.company_id == company_id)
-            .scalar()
-        )
-
-        # ---------------------------
-        # Today's Sales
-        # ---------------------------
-        today = datetime.utcnow().date()
-        day_start = datetime.combine(today, time.min)
-        day_end = datetime.combine(today, time.max)
-
-        today_sales_q = Sale.query.filter(
-            Sale.company_id == company_id,
-            Sale.created_at >= day_start,
-            Sale.created_at <= day_end
-        )
-
-        today_sales_count = today_sales_q.count()
-
-        today_sales_total = (
-            today_sales_q.with_entities(
-                func.coalesce(func.sum(Sale.line_total), 0.0)
-            ).scalar()
-        )
-
-        # ---------------------------
-        # Low Stock
-        # ---------------------------
-        LOW_STOCK_THRESHOLD = 5
-
-        low_stock_products = (
-            Product.query.filter(
-                Product.company_id == company_id,
-                Product.quantity <= LOW_STOCK_THRESHOLD
-            )
-            .order_by(Product.quantity.asc())
-            .all()
-        )
-
-        # ---------------------------
-        # Top Selling Products
-        # ---------------------------
-        top_selling_raw = (
-            db.session.query(
-                Product.name.label("name"),
-                func.coalesce(func.sum(Sale.quantity), 0).label("qty"),
-                func.coalesce(func.sum(Sale.line_total), 0.0).label("revenue"),
-            )
-            .join(Sale, Sale.product_id == Product.id)
-            .filter(Sale.company_id == company_id)
-            .group_by(Product.id)
-            .order_by(func.sum(Sale.line_total).desc())
-            .limit(5)
-            .all()
-        )
-
-        top_selling = [
-            {
-                "name": r.name,
-                "qty": int(r.qty or 0),
-                "revenue": float(r.revenue or 0),
-            }
-            for r in top_selling_raw
-        ]
+        outstanding_revenue = db.session.query(func.coalesce(func.sum(Invoice.total_amount - Invoice.amount_paid), 0.0)) \
+            .filter(Invoice.company_id == company_id, Invoice.status != "paid").scalar()
 
         return render_template(
             "dashboard.html",
-            total_products=total_products,
-            total_stock=total_stock,
-            total_sales_value=total_sales_value,
-            today_sales_count=today_sales_count,
-            today_sales_total=today_sales_total,
-            low_stock_products=low_stock_products,
-            top_selling=top_selling,
+            total_customers=total_customers,
+            total_invoices=total_invoices,
+            total_revenue=total_revenue,
+            outstanding_revenue=outstanding_revenue
         )
 
     return app

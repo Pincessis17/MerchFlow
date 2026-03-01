@@ -99,7 +99,6 @@ class User(db.Model):
     )
 
     company = db.relationship("Company", back_populates="users")
-    invoices_created = db.relationship("Invoice", back_populates="created_by_user")
 
     __table_args__ = (
         UniqueConstraint("company_id", "email", name="uq_company_user_email"),
@@ -156,6 +155,38 @@ class FeatureAccess(db.Model):
 
 
 # =====================================================
+# CUSTOMER
+# =====================================================
+class Customer(db.Model):
+    __tablename__ = "customer"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120))
+    phone = db.Column(db.String(60))
+    address = db.Column(db.String(200))
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True
+    )
+
+    company = db.relationship("Company", backref=db.backref("customers", cascade="all, delete-orphan"))
+    sales = db.relationship("Sale", back_populates="customer", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Customer {self.name}>"
+
+
+# =====================================================
 # PRODUCT
 # =====================================================
 class Product(db.Model):
@@ -189,7 +220,6 @@ class Product(db.Model):
     )
 
     company = db.relationship("Company", back_populates="products")
-    sales = db.relationship("Sale", back_populates="product", cascade="all, delete-orphan")
     purchases = db.relationship("Purchase", back_populates="product", cascade="all, delete-orphan")
 
     __table_args__ = (
@@ -211,29 +241,23 @@ class Sale(db.Model):
     __tablename__ = "sale"
 
     id = db.Column(db.Integer, primary_key=True)
-
     company_id = db.Column(
         db.Integer,
         db.ForeignKey("company.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
-
-    product_id = db.Column(
+    customer_id = db.Column(
         db.Integer,
-        db.ForeignKey("product.id", ondelete="CASCADE"),
+        db.ForeignKey("customer.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
 
-    quantity = db.Column(db.Integer, nullable=False)
-    unit_price = db.Column(db.Float, nullable=False)
-    line_total = db.Column(db.Float, nullable=False)
-
-    buying_price = db.Column(db.Float, nullable=False, default=0.0)
-    line_profit = db.Column(db.Float, nullable=False, default=0.0)
-
-    payment_status = db.Column(db.String(20), nullable=False, default="unpaid")
+    status = db.Column(db.String(20), nullable=False, default="draft")  # draft, invoiced
+    subtotal = db.Column(db.Float, nullable=False, default=0.0)
+    tax = db.Column(db.Float, nullable=False, default=0.0)
+    total_amount = db.Column(db.Float, nullable=False, default=0.0)
 
     created_at = db.Column(
         db.DateTime,
@@ -243,54 +267,21 @@ class Sale(db.Model):
     )
 
     company = db.relationship("Company", back_populates="sales")
-    product = db.relationship("Product", back_populates="sales")
-    payments = db.relationship("Payment", back_populates="sale", cascade="all, delete-orphan")
-    invoices = db.relationship("Invoice", back_populates="sale")
-
-    __table_args__ = (
-        CheckConstraint("quantity > 0"),
-        CheckConstraint("unit_price >= 0"),
-        CheckConstraint("line_total >= 0"),
-    )
-
-    # Payment helpers
-    def total_paid(self):
-        return sum(float(p.amount or 0) for p in self.payments)
-
-    def balance_due(self):
-        return float(self.line_total or 0) - self.total_paid()
-
-    def update_payment_status(self):
-        paid = self.total_paid()
-        total = float(self.line_total or 0)
-
-        if paid <= 0:
-            self.payment_status = "unpaid"
-        elif paid < total:
-            self.payment_status = "partial"
-        else:
-            self.payment_status = "paid"
+    customer = db.relationship("Customer", back_populates="sales")
+    items = db.relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
+    invoices = db.relationship("Invoice", back_populates="sale", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Sale {self.id}>"
 
 
-
 # =====================================================
-# PAYMENT
+# SALE ITEM
 # =====================================================
-class Payment(db.Model):
-    __tablename__ = "payment"
+class SaleItem(db.Model):
+    __tablename__ = "sale_item"
 
     id = db.Column(db.Integer, primary_key=True)
-
-    company_id = db.Column(
-        db.Integer,
-        db.ForeignKey("company.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
-
     sale_id = db.Column(
         db.Integer,
         db.ForeignKey("sale.id", ondelete="CASCADE"),
@@ -298,25 +289,15 @@ class Payment(db.Model):
         index=True
     )
 
-    amount = db.Column(db.Float, nullable=False)
-    method = db.Column(db.String(50), nullable=False)
-    reference = db.Column(db.String(120))
+    product_name = db.Column(db.String(120), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    unit_price = db.Column(db.Float, nullable=False, default=0.0)
+    line_total = db.Column(db.Float, nullable=False, default=0.0)
 
-    created_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow,
-        nullable=False,
-        index=True
-    )
-
-    sale = db.relationship("Sale", back_populates="payments")
-
-    __table_args__ = (
-        CheckConstraint("amount > 0"),
-    )
+    sale = db.relationship("Sale", back_populates="items")
 
     def __repr__(self):
-        return f"<Payment sale={self.sale_id} amount={self.amount}>"
+        return f"<SaleItem {self.product_name}>"
 
 
 
@@ -716,74 +697,34 @@ class Invoice(db.Model):
         db.Integer,
         db.ForeignKey("company.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
-    )
-    created_by_user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("user.id", ondelete="SET NULL"),
-        index=True,
+        index=True
     )
     sale_id = db.Column(
         db.Integer,
-        db.ForeignKey("sale.id", ondelete="SET NULL"),
-        index=True,
+        db.ForeignKey("sale.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
     )
 
     invoice_number = db.Column(db.String(60), nullable=False, index=True)
-    customer_name = db.Column(db.String(120), nullable=False)
-    customer_email = db.Column(db.String(120))
-    billing_address = db.Column(db.String(300))
-
-    status = db.Column(db.String(20), nullable=False, default="draft", index=True)
-    payment_method = db.Column(db.String(40), nullable=False, default="pending")
-    currency = db.Column(db.String(10), nullable=False, default="GHS")
-
-    subtotal = db.Column(db.Float, nullable=False, default=0.0)
-    tax_rate = db.Column(db.Float, nullable=False, default=0.0)
-    tax_amount = db.Column(db.Float, nullable=False, default=0.0)
-    discount_type = db.Column(db.String(20), nullable=False, default="none")
-    discount_value = db.Column(db.Float, nullable=False, default=0.0)
-    discount_amount = db.Column(db.Float, nullable=False, default=0.0)
     total_amount = db.Column(db.Float, nullable=False, default=0.0)
-
-    issue_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    amount_paid = db.Column(db.Float, nullable=False, default=0.0)
+    status = db.Column(db.String(20), nullable=False, default="unpaid")  # unpaid, partial, paid
     due_date = db.Column(db.DateTime)
-    paid_at = db.Column(db.DateTime)
-    notes = db.Column(db.String(600))
 
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow,
         nullable=False,
-        index=True,
-    )
-    updated_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        nullable=False,
-        index=True,
+        index=True
     )
 
     company = db.relationship("Company", back_populates="invoices")
-    created_by_user = db.relationship("User", back_populates="invoices_created")
     sale = db.relationship("Sale", back_populates="invoices")
-    line_items = db.relationship(
-        "InvoiceLineItem",
-        back_populates="invoice",
-        cascade="all, delete-orphan",
-        order_by="InvoiceLineItem.sort_order.asc()",
-    )
+    payments = db.relationship("Payment", back_populates="invoice", cascade="all, delete-orphan")
 
     __table_args__ = (
-        UniqueConstraint("company_id", "invoice_number", name="uq_company_invoice_number"),
-        UniqueConstraint("sale_id", name="uq_invoice_sale_id"),
-        CheckConstraint("subtotal >= 0"),
-        CheckConstraint("tax_rate >= 0"),
-        CheckConstraint("tax_amount >= 0"),
-        CheckConstraint("discount_value >= 0"),
-        CheckConstraint("discount_amount >= 0"),
-        CheckConstraint("total_amount >= 0"),
+        UniqueConstraint("company_id", "invoice_number", name="uq_company_invoice_number_new"),
     )
 
     def __repr__(self):
@@ -791,38 +732,62 @@ class Invoice(db.Model):
 
 
 # =====================================================
-# INVOICE LINE ITEM
+# PAYMENT
 # =====================================================
-class InvoiceLineItem(db.Model):
-    __tablename__ = "invoice_line_item"
+class Payment(db.Model):
+    __tablename__ = "payment"
 
     id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("company.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
     invoice_id = db.Column(
         db.Integer,
         db.ForeignKey("invoice.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
+        index=True
     )
-    description = db.Column(db.String(300), nullable=False)
-    quantity = db.Column(db.Float, nullable=False, default=1.0)
-    unit_price = db.Column(db.Float, nullable=False, default=0.0)
-    line_total = db.Column(db.Float, nullable=False, default=0.0)
-    sort_order = db.Column(db.Integer, nullable=False, default=1)
+
+    amount = db.Column(db.Float, nullable=False)
+    payment_method = db.Column(db.String(50), nullable=False)  # cash, momo, card, bank
 
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow,
         nullable=False,
-        index=True,
+        index=True
     )
 
-    invoice = db.relationship("Invoice", back_populates="line_items")
+    invoice = db.relationship("Invoice", back_populates="payments")
 
     __table_args__ = (
-        CheckConstraint("quantity > 0"),
-        CheckConstraint("unit_price >= 0"),
-        CheckConstraint("line_total >= 0"),
+        CheckConstraint("amount > 0"),
     )
 
     def __repr__(self):
-        return f"<InvoiceLineItem invoice={self.invoice_id}>"
+        return f"<Payment invoice={self.invoice_id} amount={self.amount}>"
+
+
+# =====================================================
+# TENANT (Property Management)
+# =====================================================
+class Tenant(db.Model):
+    __tablename__ = 'tenant'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120))
+    phone = db.Column(db.String(60))
+    property_address = db.Column(db.String(200))
+    lease_status = db.Column(db.String(20), default='active', index=True)
+    payment_history = db.Column(db.String(100), default='ok,ok,ok,ok')
+    end_date = db.Column(db.DateTime, index=True)
+    monthly_rent = db.Column(db.Float, default=0.0)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    def __repr__(self):
+        return f'<Tenant {self.name}>'
