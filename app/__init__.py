@@ -1,4 +1,8 @@
 # app/__init__.py
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 import hmac
 import secrets
@@ -19,6 +23,8 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     app.config["APP_START_TIME"] = datetime.utcnow()
+
+   
 
     db.init_app(app)
     migrate.init_app(app, db)
