@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Invoice Settings</h2>
+  <p><a href="{{ url_for('invoices.list_invoices') }}">← Back to Invoices</a></p>
+
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <div class="grid2">
+      <div>
+        <label>Brand Color</label>
+        <input name="brand_color" type="color" value="{{ settings.brand_color or '#5b8cff' }}">
+      </div>
+      <div>
+        <label>Logo (png/jpg/jpeg/webp)</label>
+        <input type="file" name="logo" accept=".png,.jpg,.jpeg,.webp">
+      </div>
+    </div>
+
+    <div>
+      <label>Invoice Footer</label>
+      <input name="footer_text" value="{{ settings.footer_text or '' }}">
+    </div>
+
+    <div>
+      <label>Payment Instructions</label>
+      <input name="payment_instructions" value="{{ settings.payment_instructions or '' }}">
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label>Numbering Prefix</label>
+        <input name="prefix" value="{{ settings.prefix or 'INV' }}">
+      </div>
+      <div>
+        <label>Numbering Format</label>
+        <input name="numbering_format" value="{{ settings.numbering_format or '{prefix}-{yyyy}-{seq:05d}' }}">
+      </div>
+    </div>
+
+    <div>
+      <label>Next Invoice Number</label>
+      <input type="number" name="next_number" min="1" value="{{ settings.next_number or 1 }}">
+    </div>
+
+    <button type="submit">Save Settings</button>
+  </form>
+{% endblock %}

@@ -86,15 +86,17 @@
     <th>Supplier</th>
     <th>Product</th>
     <th>Qty</th>
+    <th>Unit Cost</th>
     <th>Total</th>
   </tr>
   {% for p in purchases %}
   <tr>
     <td>{{ loop.index }}</td>
-    <td>{{ p.purchased_on or "" }}</td>
+    <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at else "" }}</td>
     <td>{{ p.supplier.name if p.supplier else "" }}</td>
     <td>{{ p.product.name if p.product else "" }}</td>
     <td>{{ p.quantity }}</td>
+    <td>{{ "%.2f"|format(p.unit_cost or 0) }}</td>
     <td>{{ "%.2f"|format(p.line_total or 0) }}</td>
   </tr>
   {% endfor %}

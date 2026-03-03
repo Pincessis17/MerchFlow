@@ -4,93 +4,160 @@
 
 {% block content %}
 <h2>Inventory</h2>
+<p class="muted">Manage stock levels, cost price, and selling price in one place.</p>
 
-<h3>Current Products</h3>
+<div class="grid2">
+  <div class="card" style="margin-top:0;">
+    <h3>Add New Product</h3>
+    <form method="POST">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-{# Low stock alert box #}
-{% if low_stock %}
-  <div style="border: 1px solid #f97316; background: #fff7ed; padding: 10px; margin-bottom: 16px;">
-    <strong>Low stock alert</strong> – these items have quantity ≤ {{ low_stock_threshold }}:
+      <div>
+        <label for="name">Product Name</label><br>
+        <input type="text" id="name" name="name" required>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label for="quantity">Quantity</label><br>
+          <input type="number" id="quantity" name="quantity" min="0">
+        </div>
+        <div>
+          <label for="unit">Unit (e.g. BTL, TAB, PK)</label><br>
+          <input type="text" id="unit" name="unit">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label for="category">Category</label><br>
+          <input type="text" id="category" name="category">
+        </div>
+        <div>
+          <label for="expiry_date">Expiry Date</label><br>
+          <input type="date" id="expiry_date" name="expiry_date">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label for="buying_price">Cost Price</label><br>
+          <input type="number" step="0.01" id="buying_price" name="buying_price" min="0">
+        </div>
+        <div>
+          <label for="price">Selling Price</label><br>
+          <input type="number" step="0.01" id="price" name="price" min="0">
+        </div>
+      </div>
+
+      <button type="submit">Add Product</button>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:0;">
+    <h3>Inventory Tips</h3>
     <ul>
-      {% for p in low_stock %}
-        <li>{{ p.name }} — {{ p.quantity }} {{ p.unit or "" }}</li>
-      {% endfor %}
+      <li>Keep cost price updated after each purchase for accurate profit.</li>
+      <li>Use expiry date where relevant for safer stock handling.</li>
+      <li>Set quantity to zero for out-of-stock products instead of deleting immediately.</li>
     </ul>
+
+    <hr style="border: none; border-top: 1px solid rgba(255,255,255,.12); margin: 16px 0;">
+
+    <h3>Bulk Import (CSV)</h3>
+    <p class="muted" style="margin-top:0;">
+      Tenant admins/managers can upload inventory directly. The system creates new products
+      and updates existing products by <strong>SKU/Code</strong>.
+    </p>
+
+    <form
+      method="POST"
+      action="{{ url_for('inventory.import_products_csv') }}"
+      enctype="multipart/form-data"
+    >
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label for="products_csv">Inventory CSV file</label><br>
+        <input id="products_csv" name="products_csv" type="file" accept=".csv,text/csv" required>
+      </div>
+      <button type="submit">Import Inventory CSV</button>
+    </form>
+
+    <p class="muted" style="margin-top:10px;">
+      Required columns: <code>sku</code> (or <code>code</code>) and <code>name</code>. <br>
+      Optional: <code>stock_qty</code>, <code>unit</code>, <code>category</code>, <code>expiry_date</code>,
+      <code>cost_price</code>, <code>selling_price</code>.
+    </p>
+    <a href="{{ url_for('inventory.download_inventory_import_template') }}">
+      Download CSV template
+    </a>
   </div>
-{% endif %}
+</div>
 
-{% if products %}
-  <table border="1" cellpadding="5">
-    <tr>
-      <th>#</th>
-      <th>Product Name</th>
-      <th>Quantity</th>
-      <th>Unit</th>
-      <th>Category</th>
-      <th>Expiry Date</th>
-      <th>Selling Price</th>
-      <th>Actions</th>
-    </tr>
-    {% for p in products %}
-    <tr>
-      <td>{{ loop.index }}</td>
-      <td>{{ p.name }}</td>
-      <td>{{ p.quantity }}</td>
-      <td>{{ p.unit or "" }}</td>
-      <td>{{ p.category or "" }}</td>
-      <td>{{ p.expiry_date or "-" }}</td>
-      <td>{{ "%.2f" | format(p.price or 0) }}</td>
-      <td>
-        <a href="{{ url_for('inventory.edit_product', product_id=p.id) }}">Edit</a> |
-        <a href="{{ url_for('inventory.delete_product', product_id=p.id) }}">Delete</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-{% else %}
-  <p>No products yet. Add one below.</p>
-{% endif %}
+<div class="card">
+  <h3>Current Products</h3>
+  <form method="get" style="display:grid; gap:10px; margin-bottom:10px;">
+    <div>
+      <label for="q">Search products in inventory</label><br>
+      <input
+        id="q"
+        name="q"
+        value="{{ search_query or '' }}"
+        placeholder="Search by product name, code, or category"
+      >
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button type="submit">Search</button>
+      <a class="btn" href="{{ url_for('inventory.inventory_home') }}">Clear</a>
+    </div>
+  </form>
 
-<hr>
-
-<h3>Add New Product</h3>
-<form method="POST">
-  <div>
-    <label for="name">Product Name</label><br>
-    <input type="text" id="name" name="name" required>
-  </div>
-  <br>
-
-  <div>
-    <label for="quantity">Quantity</label><br>
-    <input type="number" id="quantity" name="quantity" min="0">
-  </div>
-  <br>
-
-  <div>
-    <label for="unit">Unit (e.g. BTL, TAB, PK)</label><br>
-    <input type="text" id="unit" name="unit">
-  </div>
-  <br>
-
-  <div>
-    <label for="category">Category (e.g. Syrup, Antibiotic)</label><br>
-    <input type="text" id="category" name="category">
-  </div>
-  <br>
-
-  <div>
-    <label for="expiry_date">Expiry Date</label><br>
-    <input type="date" id="expiry_date" name="expiry_date">
-  </div>
-  <br>
-
-  <div>
-    <label for="price">Selling Price</label><br>
-    <input type="number" step="0.01" id="price" name="price" min="0">
-  </div>
-  <br>
-
-  <button type="submit">Add Product</button>
-</form>
+  {% if products %}
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Code</th>
+        <th>Product Name</th>
+        <th>Quantity</th>
+        <th>Unit</th>
+        <th>Category</th>
+        <th>Expiry Date</th>
+        <th>Cost Price</th>
+        <th>Selling Price</th>
+        <th>Actions</th>
+      </tr>
+      {% for p in products %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ p.code }}</td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.quantity }}</td>
+        <td>{{ p.unit or "" }}</td>
+        <td>{{ p.category or "" }}</td>
+        <td>{{ p.expiry_date or "-" }}</td>
+        <td>{{ "%.2f" | format(p.buying_price or 0) }}</td>
+        <td>{{ "%.2f" | format(p.price or 0) }}</td>
+        <td>
+          <a href="{{ url_for('inventory.edit_product', product_id=p.id) }}">Edit</a>
+          <form
+            method="POST"
+            action="{{ url_for('inventory.delete_product', product_id=p.id) }}"
+            style="display:inline; margin-left: 8px;"
+          >
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button
+              type="submit"
+              style="padding:4px 8px; border:1px solid rgba(255,107,107,.6); border-radius:8px; background:rgba(255,107,107,.15); color:inherit; cursor:pointer;"
+            >
+              Delete
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No products yet. Add one using the form above.</p>
+  {% endif %}
+</div>
 {% endblock %}

@@ -34,13 +34,20 @@ financial_bp = Blueprint("financial", __name__, url_prefix="/financial")
 # =====================================================
 # Permission Helper (Company Scoped)
 # =====================================================
+def _safe_parse_date(raw_value: str, fallback: date) -> date:
+    try:
+        return datetime.strptime((raw_value or "").strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return fallback
+
+
 def has_financial_access():
     user = session.get("user")
     if not user:
         return False
 
-    # Platform owner bypass
-    if user.get("email") == "addaiprincessnhyira@gmail.com":
+    role = str(user.get("role") or "").strip().lower()
+    if role == "admin":
         return True
 
     access = FeatureAccess.query.filter_by(
@@ -73,13 +80,13 @@ def financial_home():
     start_date_str = request.args.get("start_date") or date.today().strftime("%Y-%m-%d")
     end_date_str = request.args.get("end_date") or date.today().strftime("%Y-%m-%d")
 
-    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    start_date = _safe_parse_date(start_date_str, date.today())
+    end_date = _safe_parse_date(end_date_str, date.today())
+    if end_date < start_date:
+        end_date = start_date
 
     start_dt = datetime.combine(start_date, time.min)
     end_dt = datetime.combine(end_date, time.max)
-
-    print("SESSION:", session.get("user"))
 
     # ---- Sales (Company Scoped) ----
     sales = (
@@ -138,8 +145,10 @@ def financial_statement_pdf():
     start_date_str = request.args.get("start_date") or date.today().strftime("%Y-%m-%d")
     end_date_str = request.args.get("end_date") or date.today().strftime("%Y-%m-%d")
 
-    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    start_date = _safe_parse_date(start_date_str, date.today())
+    end_date = _safe_parse_date(end_date_str, date.today())
+    if end_date < start_date:
+        end_date = start_date
 
     start_dt = datetime.combine(start_date, time.min)
     end_dt = datetime.combine(end_date, time.max)
@@ -297,13 +306,20 @@ def purchases():
     )
 
     if request.method == "POST":
+        try:
+            supplier_id = int(request.form.get("supplier_id") or 0)
+            product_id = int(request.form.get("product_id") or 0)
+            quantity = int(request.form.get("quantity") or 0)
+            unit_cost = float(
+                request.form.get("unit_cost")
+                or request.form.get("buying_price")
+                or 0.0
+            )
+        except ValueError:
+            flash("Please provide valid numeric values for quantity and unit cost.", "error")
+            return redirect(url_for("financial.purchases"))
 
-        supplier_id = int(request.form.get("supplier_id") or 0)
-        product_id = int(request.form.get("product_id") or 0)
-        quantity = int(request.form.get("quantity") or 0)
-        unit_cost = float(request.form.get("unit_cost") or 0.0)
-
-        if not supplier_id or not product_id or quantity <= 0:
+        if not supplier_id or not product_id or quantity <= 0 or unit_cost < 0:
             flash("Please select supplier, product and enter valid quantity.", "error")
             return redirect(url_for("financial.purchases"))
 
@@ -317,7 +333,7 @@ def purchases():
             company_id=company_id
         ).first_or_404()
 
-        line_total = unit_cost * quantity
+        line_total = round(unit_cost * quantity, 2)
 
         purchase = Purchase(
             company_id=company_id,
@@ -328,7 +344,18 @@ def purchases():
             line_total=line_total,
         )
 
-        product.quantity += quantity
+        previous_stock = int(product.quantity or 0)
+        previous_cost = float(product.buying_price or 0.0)
+        updated_stock = previous_stock + quantity
+
+        # Keep a moving average cost so new sales use a realistic COGS basis.
+        if updated_stock > 0:
+            weighted_cost = (
+                (previous_stock * previous_cost) + (quantity * unit_cost)
+            ) / updated_stock
+            product.buying_price = round(weighted_cost, 4)
+
+        product.quantity = updated_stock
 
         db.session.add(purchase)
         db.session.commit()

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">MerchFlow mark</title>
+  <desc id="desc">Shopping cart icon with green and gold accents.</desc>
+  <defs>
+    <linearGradient id="cartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#24A160"/>
+      <stop offset="100%" stop-color="#187A52"/>
+    </linearGradient>
+    <linearGradient id="swooshGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E2A70C"/>
+      <stop offset="100%" stop-color="#F2CB3B"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M20 18h7l5 34h40a4 4 0 0 0 3.86-2.98l6.4-23.02a4 4 0 0 0-3.86-5.02H29.5l-1-6.8A4 4 0 0 0 24.56 11H20a4 4 0 0 0 0 8Z" fill="url(#cartGradient)"/>
+  <path d="M33 58h40a4 4 0 0 1 0 8H33a4 4 0 0 1 0-8Z" fill="#1C8557"/>
+  <circle cx="38" cy="74" r="8" fill="#1B7F52"/>
+  <circle cx="66" cy="74" r="8" fill="#1B7F52"/>
+  <circle cx="38" cy="74" r="3.2" fill="#F2CB3B"/>
+  <circle cx="66" cy="74" r="3.2" fill="#F2CB3B"/>
+
+  <path d="M6 54c9-11 25-18 43-18 16 0 29 4 42 12" fill="none" stroke="url(#swooshGradient)" stroke-width="6.5" stroke-linecap="round"/>
+  <path d="M62 18l3.3-5.5 2.3 4.4 4.8.5-3.4 3.6.8 4.9-4.2-2.1-4.2 2.1.8-4.9-3.4-3.6 4.8-.5Z" fill="#F2CB3B"/>
+</svg>

@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+    <h2>Customers</h2>
+</div>
+
+<div class="grid2">
+    <div>
+        <h3>Add New Customer</h3>
+        <form action="{{ url_for('customers.create') }}" method="POST">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label>Name</label>
+                <input type="text" name="name" required placeholder="Customer Name">
+            </div>
+            <div>
+                <label>Email</label>
+                <input type="email" name="email" placeholder="customer@example.com">
+            </div>
+            <div>
+                <label>Phone</label>
+                <input type="text" name="phone" placeholder="+123456789">
+            </div>
+            <div>
+                <label>Address</label>
+                <input type="text" name="address" placeholder="123 Main St">
+            </div>
+            <button type="submit">Create Customer</button>
+        </form>
+    </div>
+
+    <div>
+        <h3>Customer List</h3>
+        {% if customers %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in customers %}
+                <tr>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td class="muted">{{ c.email or '-' }}</td>
+                    <td class="muted">{{ c.phone or '-' }}</td>
+                    <td class="muted">{{ c.created_at.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No customers found.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

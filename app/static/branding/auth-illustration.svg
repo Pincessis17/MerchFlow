@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 760" role="img" aria-labelledby="title desc">
+  <title id="title">Authentication illustration</title>
+  <desc id="desc">Abstract business illustration used in login screen.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D6B4" stop-opacity=".55"/>
+      <stop offset="60%" stop-color="#7DA4FF" stop-opacity=".35"/>
+      <stop offset="100%" stop-color="#00BF63" stop-opacity=".45"/>
+    </linearGradient>
+    <linearGradient id="desk" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#C8A277"/>
+      <stop offset="100%" stop-color="#B4875A"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8A3D"/>
+      <stop offset="100%" stop-color="#FF5E18"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="920" height="760" fill="url(#bg)"/>
+  <rect x="170" y="378" width="540" height="230" rx="14" fill="url(#desk)" />
+  <rect x="208" y="415" width="468" height="24" rx="6" fill="#0C5269" />
+  <rect x="194" y="435" width="24" height="168" rx="8" fill="#B4875A" />
+  <rect x="662" y="435" width="24" height="168" rx="8" fill="#B4875A" />
+
+  <rect x="448" y="212" width="120" height="152" rx="12" fill="url(#screen)" transform="rotate(-10 508 288)" />
+  <rect x="454" y="362" width="112" height="16" rx="8" fill="#F8772A" transform="rotate(-10 510 370)" />
+
+  <circle cx="284" cy="220" r="56" fill="#C87A54" />
+  <rect x="258" y="272" width="84" height="120" rx="26" fill="#5EA6EA" />
+  <rect x="314" y="315" width="110" height="24" rx="12" fill="#5EA6EA" transform="rotate(10 314 315)" />
+  <rect x="376" y="318" width="90" height="22" rx="11" fill="#F3D9A4" transform="rotate(-8 376 318)" />
+  <circle cx="268" cy="209" r="6" fill="#2E241F" />
+  <path d="M289 232c9 11 19 11 28 0" fill="none" stroke="#7A4328" stroke-width="4" stroke-linecap="round"/>
+  <path d="M226 184c14-35 94-34 112 3-10 8-22 12-33 11-21-2-39-2-60 4-8-6-14-11-19-18Z" fill="#3C2B26"/>
+
+  <rect x="255" y="306" width="154" height="84" rx="8" fill="#F3E8CC" transform="rotate(-9 332 348)" />
+  <rect x="273" y="327" width="108" height="8" rx="4" fill="#CABEA2" transform="rotate(-9 327 331)" />
+  <rect x="273" y="347" width="88" height="8" rx="4" fill="#CABEA2" transform="rotate(-9 317 351)" />
+
+  <ellipse cx="452" cy="666" rx="210" ry="24" fill="rgba(30,30,30,.16)"/>
+  <circle cx="200" cy="550" r="46" fill="#19A45A"/>
+  <path d="M199 504c26 18 26 74 0 92-27-18-27-74 0-92Z" fill="#26B163"/>
+  <rect x="191" y="546" width="16" height="58" rx="8" fill="#7C5C3A"/>
+</svg>

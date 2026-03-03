@@ -1,0 +1,308 @@
+{% extends "layout.html" %}
+{% block content %}
+<style>
+    /* Scoped utility additions based on structural request without changing global themes */
+    .sale-header {
+        margin-bottom: 24px;
+    }
+
+    .sale-header h2 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 800;
+    }
+
+    .sale-header p {
+        margin: 4px 0 0 0;
+        color: var(--muted);
+    }
+
+    .card-section {
+        margin-bottom: 24px;
+    }
+
+    .card-section-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .customer-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    @media(min-width: 600px) {
+        .customer-grid {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+
+    .table-layout {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table-layout th {
+        text-align: left;
+        padding: 12px 10px;
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .table-layout td {
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .num-col {
+        text-align: right;
+    }
+
+    .input-flat {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text);
+        border-radius: 6px;
+        transition: border 0.2s, background 0.2s;
+    }
+
+    .input-flat:hover {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: var(--line);
+    }
+
+    .input-flat:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--accent);
+        outline: none;
+    }
+
+    .input-num {
+        text-align: right;
+    }
+
+    .totals-box {
+        width: 320px;
+        margin-left: auto;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        border: 1px solid var(--line);
+    }
+
+    .totals-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 15px;
+        color: var(--muted);
+    }
+
+    .totals-row.grand {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 0;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+    }
+
+    .actions-box {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn-secondary {
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--text);
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-primary {
+        background: var(--accent);
+        border: 1px solid var(--accent);
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-primary:hover {
+        filter: brightness(1.1);
+    }
+</style>
+
+<div class="sale-header">
+    <h2>Create New Sale</h2>
+    <p>Record a new transaction and generate an invoice.</p>
+</div>
+
+<form id="sale-form" action="{{ url_for('sales.create') }}" method="POST">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Section 1: Customer Block -->
+    <div class="card card-section">
+        <div class="card-section-title">
+            <span>👤</span> Customer Information
+        </div>
+        <div class="customer-grid">
+            <div>
+                <label style="display:block; margin-bottom:6px; font-size:13px;">Select Customer</label>
+                <select name="customer_id" required
+                    style="background: rgba(255,255,255,0.05); border-color: var(--line);">
+                    <option value="">Search for existing customer...</option>
+                    {% for c in customers %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display:block; margin-bottom:6px; font-size:13px;">Sale Date</label>
+                <input type="date" value="{{ now.strftime('%Y-%m-%d') if now else '' }}"
+                    style="background: rgba(255,255,255,0.05); border-color: var(--line);" disabled>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Line Items -->
+    <div class="card card-section">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="card-section-title" style="border:none; margin:0; padding:0;">
+                <span>🧾</span> Line Items
+            </div>
+            <button type="button" class="btn-secondary" onclick="addLineItem()"
+                style="padding: 6px 12px; font-size:13px;">+ Add Item</button>
+        </div>
+
+        <table class="table-layout" style="margin-top: 16px;">
+            <thead>
+                <tr>
+                    <th>Product / Service</th>
+                    <th class="num-col" style="width: 120px;">Quantity</th>
+                    <th class="num-col" style="width: 150px;">Unit Price</th>
+                    <th class="num-col" style="width: 150px;">Total</th>
+                    <th style="width: 50px;"></th>
+                </tr>
+            </thead>
+            <tbody id="items-body">
+                <!-- JS dynamic rows -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Section 3: Totals -->
+    <div style="display:flex; justify-content:flex-end;" class="card-section">
+        <div class="totals-box">
+            <div class="totals-row">
+                <span>Subtotal</span>
+                <span id="subtotal-display">$0.00</span>
+            </div>
+            <div class="totals-row">
+                <span>Tax (0%)</span>
+                <span>$0.00</span>
+            </div>
+            <div class="totals-row grand">
+                <span>Total Amount</span>
+                <span id="total-display" style="color:var(--accent);">$0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Actions -->
+    <div class="actions-box">
+        <button type="submit" name="action" value="draft" class="btn-secondary">Save as Draft</button>
+        <button type="submit" name="action" value="invoice" class="btn-primary">📄 Save & Convert to Invoice</button>
+    </div>
+</form>
+
+<script>
+    let lineItems = [];
+
+    function addLineItem() {
+        lineItems.push({
+            id: Date.now(),
+            product_name: "",
+            quantity: 1,
+            unit_price: 0.00
+        });
+        renderItems();
+    }
+
+    function removeLineItem(id) {
+        lineItems = lineItems.filter(i => i.id !== id);
+        renderItems();
+    }
+
+    function updateItem(id, field, value) {
+        const item = lineItems.find(i => i.id === id);
+        if (item) {
+            item[field] = field === 'product_name' ? value : parseFloat(value) || 0;
+            renderItems();
+        }
+    }
+
+    function renderItems() {
+        const tbody = document.getElementById("items-body");
+        tbody.innerHTML = "";
+
+        let subtotal = 0;
+
+        lineItems.forEach(item => {
+            const rowTotal = item.quantity * item.unit_price;
+            subtotal += rowTotal;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>
+                    <input type="text" class="input-flat" value="${item.product_name}" onchange="updateItem(${item.id}, 'product_name', this.value)" placeholder="Start typing item name...">
+                </td>
+                <td class="num-col">
+                    <input type="number" class="input-flat input-num" min="1" value="${item.quantity}" onchange="updateItem(${item.id}, 'quantity', this.value)">
+                </td>
+                <td class="num-col">
+                    <div style="position:relative; display:flex; align-items:center;">
+                        <span style="position:absolute; left:12px; color:var(--muted); pointer-events:none;">$</span>
+                        <input type="number" class="input-flat input-num" step="0.01" min="0" value="${item.unit_price}" onchange="updateItem(${item.id}, 'unit_price', this.value)">
+                    </div>
+                </td>
+                <td class="num-col" style="font-weight:bold; padding-right:12px;">$${rowTotal.toFixed(2)}</td>
+                <td style="text-align:center;">
+                    <button type="button" onclick="removeLineItem(${item.id})" style="background:transparent; border:none; padding:8px; cursor:pointer; color:var(--muted); font-size:16px;" title="Delete item">🗑</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const formattedTotal = "$" + subtotal.toFixed(2);
+        document.getElementById("subtotal-display").innerText = formattedTotal;
+        document.getElementById("total-display").innerText = formattedTotal;
+        document.getElementById("items_json").value = JSON.stringify(lineItems);
+    }
+
+    // Initialize with one empty row
+    addLineItem();
+</script>
+{% endblock %}

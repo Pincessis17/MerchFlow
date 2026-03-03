@@ -11,6 +11,10 @@ def has_feature_access(feature_name):
 
     company_id = user.get("company_id")
     email = user.get("email")
+    role = str(user.get("role") or "").strip().lower()
+
+    if role == "admin":
+        return True
 
     access = FeatureAccess.query.filter_by(
         company_id=company_id,

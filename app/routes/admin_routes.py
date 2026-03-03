@@ -6,18 +6,14 @@ from ..models import User, FeatureAccess
 from ..utils.auth import login_required
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+ALLOWED_FEATURES = {"financial"}
+TENANT_TEAM_ROLES = {"admin", "manager", "staff", "accountant"}
 
 
-# ------------------------------------------------
-# Super Admin (Platform Owner)
-# ------------------------------------------------
-def super_admin_required():
+def can_manage_team():
     user = session.get("user") or {}
-    email = user.get("email")
-
-    SUPER_ADMIN_EMAIL = "addaiprincessnhyira@gmail.com"
-
-    return email == SUPER_ADMIN_EMAIL
+    role = str(user.get("role") or "").strip().lower()
+    return bool(user) and bool(user.get("company_id")) and role == "admin"
 
 
 # ------------------------------------------------
@@ -26,9 +22,8 @@ def super_admin_required():
 @admin_bp.route("/")
 @login_required
 def admin_home():
-
-    if not super_admin_required():
-        flash("You are not allowed to access Admin Panel.", "error")
+    if not can_manage_team():
+        flash("Only company admins can access this page.", "error")
         return redirect(url_for("home"))
 
     user = session.get("user")
@@ -61,16 +56,23 @@ def admin_home():
 @admin_bp.route("/grant", methods=["POST"])
 @login_required
 def grant_access():
-
-    if not super_admin_required():
-        flash("Unauthorized.", "error")
+    if not can_manage_team():
+        flash("Only company admins can manage finance access.", "error")
         return redirect(url_for("home"))
 
     user = session.get("user")
     company_id = user["company_id"]
 
-    email = request.form.get("email")
-    feature = request.form.get("feature")
+    email = (request.form.get("email") or "").strip().lower()
+    feature = (request.form.get("feature") or "").strip().lower()
+    if not email or feature not in ALLOWED_FEATURES:
+        flash("Invalid access request.", "error")
+        return redirect(url_for("admin.admin_home"))
+
+    target_user = User.query.filter_by(company_id=company_id, email=email).first()
+    if not target_user:
+        flash("User was not found in your company.", "error")
+        return redirect(url_for("admin.admin_home"))
 
     existing = FeatureAccess.query.filter_by(
         company_id=company_id,
@@ -101,16 +103,18 @@ def grant_access():
 @admin_bp.route("/revoke", methods=["POST"])
 @login_required
 def revoke_access():
-
-    if not super_admin_required():
-        flash("Unauthorized.", "error")
+    if not can_manage_team():
+        flash("Only company admins can manage finance access.", "error")
         return redirect(url_for("home"))
 
     user = session.get("user")
     company_id = user["company_id"]
 
-    email = request.form.get("email")
-    feature = request.form.get("feature")
+    email = (request.form.get("email") or "").strip().lower()
+    feature = (request.form.get("feature") or "").strip().lower()
+    if not email or feature not in ALLOWED_FEATURES:
+        flash("Invalid access request.", "error")
+        return redirect(url_for("admin.admin_home"))
 
     access = FeatureAccess.query.filter_by(
         company_id=company_id,
@@ -124,3 +128,135 @@ def revoke_access():
         flash("Access revoked.", "info")
 
     return redirect(url_for("admin.admin_home"))
+
+
+# ------------------------------------------------
+# Team Management (Tenant Admin)
+# ------------------------------------------------
+@admin_bp.route("/team", methods=["GET"])
+@login_required
+def team_management():
+    if not can_manage_team():
+        flash("Only company admins can manage staff accounts.", "error")
+        return redirect(url_for("home"))
+
+    user = session.get("user") or {}
+    company_id = user.get("company_id")
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
+    users = (
+        User.query
+        .filter_by(company_id=company_id)
+        .order_by(User.created_at.desc())
+        .all()
+    )
+    finance_access_emails = {
+        item.email
+        for item in FeatureAccess.query.filter_by(
+            company_id=company_id,
+            feature="financial",
+            is_enabled=True,
+        ).all()
+    }
+    return render_template(
+        "admin/team_management.html",
+        users=users,
+        tenant_roles=sorted(TENANT_TEAM_ROLES),
+        finance_access_emails=finance_access_emails,
+    )
+
+
+@admin_bp.route("/team/create", methods=["POST"])
+@login_required
+def create_team_user():
+    if not can_manage_team():
+        flash("Only company admins can manage staff accounts.", "error")
+        return redirect(url_for("home"))
+
+    actor = session.get("user") or {}
+    company_id = actor.get("company_id")
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
+    email = (request.form.get("email") or "").strip().lower()
+    name = (request.form.get("name") or "").strip()
+    role = (request.form.get("role") or "staff").strip().lower()
+    password = request.form.get("password") or ""
+    confirm_password = request.form.get("confirm_password") or ""
+
+    if not email or not name:
+        flash("Name and email are required.", "error")
+        return redirect(url_for("admin.team_management"))
+    if "@" not in email or "." not in email:
+        flash("Please provide a valid email address.", "error")
+        return redirect(url_for("admin.team_management"))
+    if role not in TENANT_TEAM_ROLES:
+        flash("Invalid role selected.", "error")
+        return redirect(url_for("admin.team_management"))
+    if len(password) < 8:
+        flash("Password must be at least 8 characters.", "error")
+        return redirect(url_for("admin.team_management"))
+    if password != confirm_password:
+        flash("Password confirmation does not match.", "error")
+        return redirect(url_for("admin.team_management"))
+
+    existing = User.query.filter_by(company_id=company_id, email=email).first()
+    if existing:
+        flash("A user with this email already exists in your company.", "error")
+        return redirect(url_for("admin.team_management"))
+
+    user = User(
+        company_id=company_id,
+        email=email,
+        name=name,
+        role=role,
+    )
+    user.set_password(password)
+
+    db.session.add(user)
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash("Could not create this user. The email may already exist.", "error")
+        return redirect(url_for("admin.team_management"))
+
+    flash(f"User account created for {email}.", "success")
+    return redirect(url_for("admin.team_management"))
+
+
+@admin_bp.route("/team/delete/<int:user_id>", methods=["POST"])
+@login_required
+def delete_team_user(user_id):
+    if not can_manage_team():
+        flash("Only company admins can manage staff accounts.", "error")
+        return redirect(url_for("home"))
+
+    actor = session.get("user") or {}
+    company_id = actor.get("company_id")
+    if not company_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for("auth.login"))
+
+    target = User.query.filter_by(id=user_id, company_id=company_id).first_or_404()
+    if target.id == actor.get("id"):
+        flash("You cannot delete your own account while logged in.", "error")
+        return redirect(url_for("admin.team_management"))
+
+    if (target.role or "").strip().lower() == "admin":
+        admin_count = User.query.filter_by(company_id=company_id, role="admin").count()
+        if admin_count <= 1:
+            flash("You cannot delete the last admin account.", "error")
+            return redirect(url_for("admin.team_management"))
+
+    FeatureAccess.query.filter_by(
+        company_id=company_id,
+        email=target.email,
+    ).delete(synchronize_session=False)
+    db.session.delete(target)
+    db.session.commit()
+    flash("User account deleted.", "info")
+    return redirect(url_for("admin.team_management"))
