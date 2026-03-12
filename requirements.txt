@@ -1,8 +1,8 @@
-flask
-flask-migrate
-flask-sqlalchemy
+django
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+dj-database-url
 python-dotenv
 psycopg[binary]
-reportlab
-sqlalchemy
-supabase
+gunicorn

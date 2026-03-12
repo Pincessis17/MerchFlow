@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: pharmacyapp-django
+    env: python
+    buildCommand: pip install -r requirements.txt && cd backend && python manage.py migrate --noinput
+    startCommand: gunicorn --chdir backend business_manager.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: SESSION_COOKIE_SECURE
+        value: "1"
+      - key: DJANGO_SECURE_SSL_REDIRECT
+        value: "1"
